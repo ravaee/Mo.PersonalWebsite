@@ -47,7 +47,7 @@ jobs:
           cat > .env.${{ env.ENVIRONMENT }} << EOL
         ENVIRONMENT=${{ env.ENVIRONMENT }}
         ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }}
-        WEBAPP_PORT=${{ env.ENVIRONMENT == 'prod' && '80' || '8081' }}
+        WEBAPP_PORT=${{ secrets.WEBAPP_PORT || '3000' }}
         SQL_PORT=${{ env.ENVIRONMENT == 'prod' && '1433' || '1434' }}
         DATABASE_NAME=MoPersonalWebsite_${{ env.ENVIRONMENT == 'prod' && 'Prod' || 'Dev' }}
         SQL_SERVER_PASSWORD=${{ secrets.SQL_SERVER_PASSWORD }}
