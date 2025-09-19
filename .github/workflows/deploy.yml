@@ -36,12 +36,12 @@ jobs:
 
     - name: Deploy to server
       run: |
-        # Copy files to server
-        scp -r deployment/ ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:${{ env.DEPLOY_PATH }}/
+        # Copy entire repository to server
+        rsync -avz --delete ./ ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:${{ env.DEPLOY_PATH }}/
         
         # SSH into server and deploy
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
-          cd ${{ env.DEPLOY_PATH }}
+          cd ${{ env.DEPLOY_PATH }}/deployment
           
           # Create environment file with secrets
           cat > .env.${{ env.ENVIRONMENT }} << EOL
