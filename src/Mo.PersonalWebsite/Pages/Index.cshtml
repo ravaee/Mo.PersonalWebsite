@@ -1,0 +1,206 @@
+@page
+@model Mo.PersonalWebsite.Pages.IndexModel
+@{
+    ViewData["Title"] = "Home";
+    ViewData["MetaDescription"] = "Welcome to Mo's personal website - A passionate software developer sharing insights, projects, and experiences in web development and technology.";
+    ViewData["MetaKeywords"] = "software developer, web development, programming, technology, articles, portfolio";
+}
+
+<!-- Minimal Hero Section with Particles -->
+<section class="hero-minimal py-5">
+    <div id="particle-background"></div>
+    <div class="container position-relative">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <!-- Profile & Title -->
+                <div class="profile-intro mb-4">
+                    <img src="~/images/mo_profile.jpg" alt="Mo Ravaei" class="profile-img mb-3">
+                    <h1 class="name-title mb-2">Hi, I'm <span class="accent-text">Mo</span></h1>
+                    <p class="role-subtitle">Senior Software Engineer • 10+ Years Experience</p>
+                </div>
+                
+                <!-- Brief Description -->
+                <p class="intro-text mb-4">
+                    Creating resilient cloud solutions that handle millions of real-time messages daily.
+                    Passionate about clean architecture and modern development practices.
+                </p>
+                
+                <!-- Quick Actions -->
+                <div class="quick-actions mb-4">
+                    <a href="/About" class="btn-action primary">About Me</a>
+                    <a href="/Articles" class="btn-action secondary">Articles</a>
+                    <a href="mailto:ravaeimohamad@gmail.com" class="btn-action tertiary">Contact</a>
+                </div>
+                
+                <!-- Essential Links -->
+                <div class="essential-links">
+                    <a href="https://github.com/moravaei" target="_blank" class="link-icon">
+                        <i class="bi bi-github"></i>
+                    </a>
+                    <a href="https://linkedin.com/in/mo-ravaei" target="_blank" class="link-icon">
+                        <i class="bi bi-linkedin"></i>
+                    </a>
+                    <span class="location-text">
+                        <i class="bi bi-geo-alt"></i> Leipzig, Germany
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Latest Articles Section -->
+@if (Model.RecentArticles.Any())
+{
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row align-items-center mb-5">
+                <div class="col">
+                    <h2 class="h3 mb-2">Latest Articles</h2>
+                    <p class="text-muted mb-0">Insights and tutorials on software development</p>
+                </div>
+                <div class="col-auto">
+                    <a href="/Articles" class="btn btn-outline-primary btn-sm">
+                        View All <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                @foreach (var article in Model.RecentArticles.Take(6))
+                {
+                    <div class="col-lg-4 col-md-6">
+                        <article class="card h-100 border-0 shadow-sm hover-lift">
+                            <div class="card-body d-flex flex-column">
+                                <!-- Category Badge -->
+                                @if (article.Category != null)
+                                {
+                                    <span class="badge bg-primary-subtle text-primary align-self-start mb-3">@article.Category.Name</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary align-self-start mb-3">General</span>
+                                }
+                                
+                                <!-- Title -->
+                                <h3 class="h5 mb-3">
+                                    <a href="/Articles/@article.Slug" class="text-decoration-none text-dark stretched-link">
+                                        @article.Title
+                                    </a>
+                                </h3>
+                                
+                                <!-- Excerpt -->
+                                <p class="text-muted small mb-4 flex-grow-1">
+                                    @{
+                                        var excerpt = article.MetaDescription;
+                                        if (string.IsNullOrEmpty(excerpt) && !string.IsNullOrEmpty(article.Content))
+                                        {
+                                            excerpt = System.Text.RegularExpressions.Regex.Replace(article.Content, "<.*?>", "");
+                                            if (excerpt.Length > 120)
+                                            {
+                                                excerpt = excerpt.Substring(0, 120) + "...";
+                                            }
+                                        }
+                                    }
+                                    @(excerpt ?? "")
+                                </p>
+                                
+                                <!-- Meta Info -->
+                                <div class="d-flex align-items-center text-muted small">
+                                    <i class="bi bi-calendar3 me-1"></i>
+                                    <span>@((article.PublishedAt ?? article.CreatedAt).ToString("MMM dd, yyyy"))</span>
+                                    <span class="mx-2">•</span>
+                                    <i class="bi bi-clock me-1"></i>
+                                    <span>
+                                        @{
+                                            var wordCount = article.Content?.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
+                                            var readingTime = Math.Max(1, wordCount / 200);
+                                        }
+                                        @readingTime min read
+                                    </span>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    <section class="articles-horizontal-section py-5 bg-light">
+        <div class="container text-center">
+            <div class="empty-articles-state">
+                <div class="empty-icon">
+                    <i class="bi bi-journal-plus"></i>
+                </div>
+                <h3>More Articles Coming Soon!</h3>
+                <p class="text-muted">I'm working on some exciting content. Check back soon for fresh articles!</p>
+            </div>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <!-- Articles Slider Script -->
+    <script>
+    function scrollArticles(direction) {
+        const slider = document.querySelector('.articles-slider');
+        const scrollAmount = 320; // Width of one card + gap
+        
+        if (direction === 'left') {
+            slider.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        } else {
+            slider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Auto scroll for articles slider
+        const articlesSlider = document.querySelector('.articles-slider');
+        if (articlesSlider) {
+            let isAutoScrolling = true;
+            let autoScrollInterval;
+            
+            function startAutoScroll() {
+                autoScrollInterval = setInterval(() => {
+                    if (isAutoScrolling) {
+                        const maxScroll = articlesSlider.scrollWidth - articlesSlider.clientWidth;
+                        if (articlesSlider.scrollLeft >= maxScroll) {
+                            articlesSlider.scrollTo({ left: 0, behavior: 'smooth' });
+                        } else {
+                            scrollArticles('right');
+                        }
+                    }
+                }, 5000);
+            }
+            
+            // Pause auto scroll on hover
+            articlesSlider.addEventListener('mouseenter', () => {
+                isAutoScrolling = false;
+            });
+            
+            articlesSlider.addEventListener('mouseleave', () => {
+                isAutoScrolling = true;
+            });
+            
+            startAutoScroll();
+        }
+    });
+    </script>
+}

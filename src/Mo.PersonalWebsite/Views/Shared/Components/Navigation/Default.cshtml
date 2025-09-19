@@ -1,0 +1,14 @@
+@model IEnumerable<Mo.PersonalWebsite.Infrastructure.Entities.Page>
+
+@foreach (var navPage in Model)
+{
+    <li class="nav-item">
+        <a class="nav-link" href="/Pages/@navPage.Slug">
+            @if (!string.IsNullOrWhiteSpace(navPage.NavigationIcon))
+            {
+                <i class="bi bi-@navPage.NavigationIcon"></i>
+            }
+            @navPage.NavigationText
+        </a>
+    </li>
+}

@@ -1,0 +1,148 @@
+@page
+@model CVModel
+@{
+    ViewData["Title"] = "Curriculum Vitae";
+}
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4 p-lg-5">
+                <div class="d-flex flex-column flex-md-row align-items-center align-items-md-start gap-4 mb-4">
+                    <img src="/images/profile.jpg" alt="Profile Photo" class="rounded-circle shadow" style="width: 128px; height: 128px; object-fit: cover;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiBmaWxsPSIjRjNGNEY2IiByeD0iNjQiLz4KPHA/aCBkPSJNNjQgNDBDNzMuOTQxIDQwIDgyIDQ4LjA1OSA4MiA1OEM4MiA2Ny45NDEgNzMuOTQxIDc2IDY0IDc2QzU0LjA1OSA3NiA0NiA2Ny45NDEgNDYgNThDNDYgNDguMDU5IDU0LjA1OSA0MCA2NCA0MFoiIGZpbGw9IiM5QjlCQTEiLz4KPHA9aCBkPSJNMzIgOTZDMzIgODMuMjQ3MyA0Mi4yNDczIDc0IDU2IDc0SDcyQzg1Ljc1MjcgNzQgOTYgODMuMjQ3MyA5NiA5NlYxMDRIMzJWOTZaIiBmaWxsPSIjOUI5QkExIi8+Cjwvc3ZnPgo='" />
+                    <div class="text-center text-md-start">
+                        <h1 class="h3 mb-1">Mo Ravaei</h1>
+                        <p class="text-secondary mb-3">Senior Software Developer</p>
+                        <div class="d-flex flex-column flex-md-row gap-3 text-secondary">
+                            <div><i class="bi bi-envelope me-2"></i>mo@example.com</div>
+                            <div><i class="bi bi-geo-alt me-2"></i>Location, Country</div>
+                            <div><i class="bi bi-telephone me-2"></i>+1 (555) 123-4567</div>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="mb-4">
+                    <h3 class="h5 border-start border-primary ps-3">Professional Summary</h3>
+                    <p class="text-secondary mb-0 mt-2">
+                        Experienced Software Developer with 8+ years in full-stack web development, specializing in .NET technologies,
+                        cloud architecture, and modern web frameworks. Proven track record of delivering scalable, high-performance
+                        applications and leading development teams. Passionate about clean code, best practices, and continuous learning.
+                    </p>
+                </section>
+
+                <section class="mb-4">
+                    <h3 class="h5 border-start border-primary ps-3">Technical Skills</h3>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <h6 class="mb-2">Programming Languages</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="badge text-bg-primary">C#</span>
+                                <span class="badge text-bg-primary">JavaScript</span>
+                                <span class="badge text-bg-primary">TypeScript</span>
+                                <span class="badge text-bg-primary">Python</span>
+                                <span class="badge text-bg-primary">SQL</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-2">Frameworks & Libraries</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="badge text-bg-success">.NET Core</span>
+                                <span class="badge text-bg-success">ASP.NET</span>
+                                <span class="badge text-bg-success">React</span>
+                                <span class="badge text-bg-success">Entity Framework</span>
+                                <span class="badge text-bg-success">Bootstrap</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-2">Databases</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="badge text-bg-warning">SQL Server</span>
+                                <span class="badge text-bg-warning">PostgreSQL</span>
+                                <span class="badge text-bg-warning">MongoDB</span>
+                                <span class="badge text-bg-warning">Redis</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-2">Cloud & DevOps</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="badge text-bg-purple">Azure</span>
+                                <span class="badge text-bg-purple">Docker</span>
+                                <span class="badge text-bg-purple">Kubernetes</span>
+                                <span class="badge text-bg-purple">CI/CD</span>
+                                <span class="badge text-bg-purple">Git</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="mb-4">
+                    <h3 class="h5 border-start border-primary ps-3">Professional Experience</h3>
+                    <div class="mt-2">
+                        <div class="border-start border-3 border-primary ps-3 mb-4">
+                            <div class="d-flex flex-column flex-md-row justify-content-between">
+                                <h4 class="h6 mb-1">Senior Software Developer</h4>
+                                <span class="text-secondary">2020 - Present</span>
+                            </div>
+                            <div class="text-primary fw-semibold mb-2">Tech Solutions Inc.</div>
+                            <ul class="text-secondary mb-0">
+                                <li>Led development of microservices architecture serving 100,000+ daily active users</li>
+                                <li>Implemented CI/CD pipelines reducing deployment time by 75%</li>
+                                <li>Mentored junior developers and conducted code reviews</li>
+                                <li>Designed and implemented RESTful APIs using .NET Core and Entity Framework</li>
+                            </ul>
+                        </div>
+                        <div class="border-start border-3 border-primary ps-3 mb-4">
+                            <div class="d-flex flex-column flex-md-row justify-content-between">
+                                <h4 class="h6 mb-1">Full Stack Developer</h4>
+                                <span class="text-secondary">2018 - 2020</span>
+                            </div>
+                            <div class="text-primary fw-semibold mb-2">Digital Innovations Ltd.</div>
+                            <ul class="text-secondary mb-0">
+                                <li>Developed responsive web applications using ASP.NET MVC and React</li>
+                                <li>Optimized database queries improving application performance by 40%</li>
+                                <li>Collaborated with UX/UI designers to implement pixel-perfect designs</li>
+                            </ul>
+                        </div>
+                        <div class="border-start border-3 border-primary ps-3">
+                            <div class="d-flex flex-column flex-md-row justify-content-between">
+                                <h4 class="h6 mb-1">Software Developer</h4>
+                                <span class="text-secondary">2016 - 2018</span>
+                            </div>
+                            <div class="text-primary fw-semibold mb-2">StartUp Ventures</div>
+                            <ul class="text-secondary mb-0">
+                                <li>Built and maintained web applications using .NET Framework and SQL Server</li>
+                                <li>Participated in agile development processes and sprint planning</li>
+                                <li>Implemented automated testing suites increasing code coverage to 85%</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="mb-4">
+                    <h3 class="h5 border-start border-primary ps-3">Education</h3>
+                    <div class="mt-2">
+                        <h4 class="h6 mb-1">Bachelor of Science in Computer Science</h4>
+                        <div class="text-primary">University of Technology</div>
+                        <div class="text-secondary">2012 - 2016 | GPA: 3.8/4.0</div>
+                    </div>
+                </section>
+
+                <section class="mb-4">
+                    <h3 class="h5 border-start border-primary ps-3">Certifications</h3>
+                    <div class="row g-2 mt-1">
+                        <div class="col-md-6"><i class="bi bi-check2-circle text-primary me-2"></i>Microsoft Certified: Azure Developer Associate</div>
+                        <div class="col-md-6"><i class="bi bi-check2-circle text-primary me-2"></i>AWS Certified Solutions Architect</div>
+                        <div class="col-md-6"><i class="bi bi-check2-circle text-primary me-2"></i>Certified Scrum Master (CSM)</div>
+                        <div class="col-md-6"><i class="bi bi-check2-circle text-primary me-2"></i>Docker Certified Associate</div>
+                    </div>
+                </section>
+
+                <section class="text-center mt-4">
+                    <button class="btn btn-primary">
+                        <i class="bi bi-download me-2"></i>Download PDF Version
+                    </button>
+                </section>
+            </div>
+        </div>
+    </div>
+</section>

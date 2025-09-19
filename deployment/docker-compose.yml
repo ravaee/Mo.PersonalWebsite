@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  webapp:
+    build:
+      context: ../src/Mo.PersonalWebsite
+      dockerfile: Dockerfile
+    container_name: mo-website-${ENVIRONMENT:-local}
+    restart: unless-stopped
+    ports:
+      - "${WEBAPP_PORT:-3001}:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=${DATABASE_NAME};User Id=sa;Password=${SQL_SERVER_PASSWORD};TrustServerCertificate=true;
+      - AdminUser__Username=${ADMIN_USERNAME}
+      - AdminUser__Password=${ADMIN_PASSWORD}
+      - Logging__LogLevel__Default=${LOG_LEVEL_DEFAULT}
+      - Logging__LogLevel__Microsoft.AspNetCore=${LOG_LEVEL_ASPNETCORE}
+    depends_on:
+      - sqlserver
+    networks:
+      - mo-website-network
+    volumes:
+      - webapp-data:/app/wwwroot/uploads
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mo-website-sqlserver-${ENVIRONMENT:-local}
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SQL_SERVER_PASSWORD}
+      - MSSQL_PID=Express
+    ports:
+      - "${SQL_PORT:-1433}:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+      - ./backups:/var/opt/mssql/backups
+    networks:
+      - mo-website-network
+
+networks:
+  mo-website-network:
+    driver: bridge
+
+volumes:
+  webapp-data:
+    driver: local
+  sqlserver-data:
+    driver: local

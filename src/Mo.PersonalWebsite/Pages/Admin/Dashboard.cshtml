@@ -1,0 +1,156 @@
+@page
+@model Mo.PersonalWebsite.Pages.Admin.DashboardModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-1">Admin Dashboard</h1>
+                <p class="text-secondary mb-0">Welcome back, @User.Identity?.Name!</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/" target="_blank" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>View Site
+                </a>
+                <form method="post" action="/Admin/Login" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" asp-page-handler="Logout" class="btn btn-secondary">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="row g-4 mb-4">
+            <!-- Articles Card -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="bi bi-journal-text text-primary fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-0">Articles</h5>
+                                <p class="card-text small text-secondary mb-0">Manage your blog posts</p>
+                            </div>
+                        </div>
+                        <a href="/Articles/Manage" class="btn btn-outline-primary btn-sm">
+                            Manage Articles <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Images Card -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="bi bi-image text-success fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-0">Images</h5>
+                                <p class="card-text small text-secondary mb-0">Upload and manage images</p>
+                            </div>
+                        </div>
+                        <a href="/Admin/Images" class="btn btn-outline-success btn-sm">
+                            Manage Images <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pages Card -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="bi bi-file-text text-warning fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-0">Pages</h5>
+                                <p class="card-text small text-secondary mb-0">Manage site pages</p>
+                            </div>
+                        </div>
+                        <a href="/Admin/Pages" class="btn btn-outline-warning btn-sm">
+                            Manage Pages <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Quick Actions</h5>
+                <div class="row g-3">
+                    <div class="col-md-6 col-lg-3">
+                        <a href="/Articles/Create" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            New Article
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3">
+                        <a href="/Admin/Images/Upload" class="btn btn-success w-100 d-flex align-items-center justify-content-center">
+                            <i class="bi bi-cloud-upload me-2"></i>
+                            Upload Image
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3">
+                        <a href="/" target="_blank" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
+                            <i class="bi bi-eye me-2"></i>
+                            View Site
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3">
+                        <form method="post" action="/Admin/Login" class="w-100">
+                            <input name="__RequestVerificationToken" type="hidden" value="@Html.AntiForgeryToken().ToString()" />
+                            <button type="submit" asp-page-handler="Logout" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center">
+                                <i class="bi bi-box-arrow-right me-2"></i>
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-4">
+                    <i class="bi bi-activity text-secondary" style="font-size: 3rem;"></i>
+                    <h6 class="mt-2 text-secondary">Welcome to your dashboard!</h6>
+                    <p class="text-secondary small mb-3">From here you can manage all aspects of your personal website:</p>
+                    <ul class="list-unstyled text-start d-inline-block">
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Create and manage blog articles</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Upload and organize images</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Manage website pages and content</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Monitor site activity and performance</li>
+                    </ul>
+                    <div class="mt-3">
+                        <a href="/Articles/Create" class="btn btn-primary me-2">
+                            <i class="bi bi-plus-circle me-1"></i>Create Your First Article
+                        </a>
+                        <a href="/" target="_blank" class="btn btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i>View Your Site
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

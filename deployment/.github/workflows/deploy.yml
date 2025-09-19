@@ -1,0 +1,70 @@
+name: Deploy to Linux Server
+
+on:
+  push:
+    branches: [ main, dev ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: mo-personal-website
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set environment based on branch
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+          echo "DEPLOY_PATH=/opt/mo-website-prod" >> $GITHUB_ENV
+        else
+          echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+          echo "DEPLOY_PATH=/opt/mo-website-dev" >> $GITHUB_ENV
+        fi
+
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to server
+      run: |
+        # Copy files to server
+        scp -r deployment/ ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:${{ env.DEPLOY_PATH }}/
+        
+        # SSH into server and deploy
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          cd ${{ env.DEPLOY_PATH }}
+          
+          # Create environment file with secrets
+          cat > .env.${{ env.ENVIRONMENT }} << EOL
+        ENVIRONMENT=${{ env.ENVIRONMENT }}
+        ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }}
+        WEBAPP_PORT=${{ env.ENVIRONMENT == 'prod' && '80' || '8081' }}
+        SQL_PORT=${{ env.ENVIRONMENT == 'prod' && '1433' || '1434' }}
+        DATABASE_NAME=MoPersonalWebsite_${{ env.ENVIRONMENT == 'prod' && 'Prod' || 'Dev' }}
+        SQL_SERVER_PASSWORD=${{ secrets.SQL_SERVER_PASSWORD }}
+        ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
+        ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+        LOG_LEVEL_DEFAULT=${{ env.ENVIRONMENT == 'prod' && 'Warning' || 'Information' }}
+        LOG_LEVEL_ASPNETCORE=${{ env.ENVIRONMENT == 'prod' && 'Error' || 'Warning' }}
+        WEBAPP_MEMORY_LIMIT=${{ env.ENVIRONMENT == 'prod' && '1G' || '512M' }}
+        WEBAPP_MEMORY_RESERVATION=${{ env.ENVIRONMENT == 'prod' && '512M' || '256M' }}
+        SQL_MEMORY_LIMIT=${{ env.ENVIRONMENT == 'prod' && '2G' || '1G' }}
+        SQL_MEMORY_RESERVATION=${{ env.ENVIRONMENT == 'prod' && '1G' || '512M' }}
+        EOL
+          
+          # Deploy with docker-compose
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} down --remove-orphans || true
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} up --build -d
+          
+          # Clean up environment file for security
+          rm -f .env.${{ env.ENVIRONMENT }}
+        EOF
