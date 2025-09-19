@@ -2,7 +2,7 @@ name: Deploy to Linux Server
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ master, dev ]
   workflow_dispatch:
 
 env:
@@ -19,12 +19,12 @@ jobs:
 
     - name: Set environment based on branch
       run: |
-        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+        if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
           echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-          echo "DEPLOY_PATH=/opt/mo-website-prod" >> $GITHUB_ENV
+          echo "DEPLOY_PATH=/root/mowebsite" >> $GITHUB_ENV
         else
           echo "ENVIRONMENT=dev" >> $GITHUB_ENV
-          echo "DEPLOY_PATH=/opt/mo-website-dev" >> $GITHUB_ENV
+          echo "DEPLOY_PATH=/root/mowebsite-dev" >> $GITHUB_ENV
         fi
 
     - name: Setup SSH key
