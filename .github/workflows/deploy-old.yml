@@ -1,22 +1,17 @@
-name: Deploy to Linux Server
+# DISABLED - Replaced by optimized deployment workflow
+# name: Deploy to Linux Server
 
-on:
-  push:
-    branches: [ master, dev ]
-  workflow_dispatch:
-    inputs:
-      force_rebuild:
-        description: 'Force complete rebuild'
-        required: false
-        default: 'false'
-        type: boolean
+# on:
+#   push:
+#     branches: [ master, dev ]
+#   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: mo-personal-website
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -32,38 +27,6 @@ jobs:
           echo "ENVIRONMENT=dev" >> $GITHUB_ENV
           echo "DEPLOY_PATH=/root/mowebsite-dev" >> $GITHUB_ENV
         fi
-
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./src/Mo.PersonalWebsite
-        file: ./src/Mo.PersonalWebsite/Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
 
     - name: Setup SSH key
       run: |
@@ -82,8 +45,8 @@ jobs:
 
     - name: Deploy to server
       run: |
-        # Copy deployment files to server
-        rsync -avz --exclude='.git' --exclude='src' deployment/ ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:${{ env.DEPLOY_PATH }}/deployment/
+        # Copy entire repository to server
+        rsync -avz --delete ./ ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:${{ env.DEPLOY_PATH }}/
         
         # SSH into server and deploy
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
@@ -105,17 +68,16 @@ jobs:
         WEBAPP_MEMORY_RESERVATION=${{ env.ENVIRONMENT == 'prod' && '512M' || '256M' }}
         SQL_MEMORY_LIMIT=${{ env.ENVIRONMENT == 'prod' && '2G' || '1G' }}
         SQL_MEMORY_RESERVATION=${{ env.ENVIRONMENT == 'prod' && '1G' || '512M' }}
-        DOCKER_IMAGE=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.ENVIRONMENT }}
         EOL
-          
-          # Login to GitHub Container Registry
-          echo '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-          
-          # Pull the latest image
-          docker pull ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.ENVIRONMENT }}
           
           # Deploy with docker-compose
           docker-compose --env-file .env.${{ env.ENVIRONMENT }} down --remove-orphans || true
+          
+          # Remove only the webapp image to force rebuild (keep base images)
+          docker image rm $(docker images -q mo-website-${ENVIRONMENT}) 2>/dev/null || true
+          
+          # Build and deploy with selective cache clearing
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} build --pull webapp
           docker-compose --env-file .env.${{ env.ENVIRONMENT }} up -d
           
           # Wait for services to be ready
@@ -125,6 +87,16 @@ jobs:
           # Verify deployment
           echo "Verifying deployment..."
           docker-compose --env-file .env.${{ env.ENVIRONMENT }} ps
+          
+          # Check if webapp is responding
+          WEBAPP_PORT=$(grep WEBAPP_PORT .env.${{ env.ENVIRONMENT }} | cut -d '=' -f2)
+          echo "Testing webapp on port $WEBAPP_PORT..."
+          timeout 30 curl -f http://localhost:$WEBAPP_PORT/ || echo "Warning: Webapp health check failed"
+          
+          # Verify static files are accessible
+          echo "Verifying static files..."
+          docker exec mo-website-${{ env.ENVIRONMENT }} ls -la /app/wwwroot/css/ || echo "Warning: CSS files not found"
+          docker exec mo-website-${{ env.ENVIRONMENT }} ls -la /app/wwwroot/js/ || echo "Warning: JS files not found"
           
           # Clean up environment file for security
           rm -f .env.${{ env.ENVIRONMENT }}
