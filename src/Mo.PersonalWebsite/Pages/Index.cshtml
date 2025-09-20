@@ -10,87 +10,101 @@
 <section class="hero-minimal py-5">
     <div id="particle-background"></div>
     <div class="container position-relative">
-        <div class="row justify-content-center">
-            <div class="col-lg-8 text-center">
-                <!-- Profile & Title -->
-                <div class="profile-intro mb-4">
-                    <img src="~/images/mo_profile.jpg" alt="Mo Ravaei" class="profile-img mb-3">
-                    <h1 class="name-title mb-2">Hi, I'm <span class="accent-text">Mo</span></h1>
-                    <p class="role-subtitle">Senior Software Engineer • 10+ Years Experience</p>
+        <div class="row align-items-center">
+            <!-- Mobile-first: Image comes first on mobile, will be on right on desktop -->
+            <div class="col-lg-4 order-lg-2 mb-4 mb-lg-0">
+                <div class="text-center">
+                    <img src="/images/mo_profile.jpg" alt="Mo Ravaei Profile Photo" 
+                         class="img-fluid rounded-circle shadow-lg profile-image">
                 </div>
-                
-                <!-- Brief Description -->
-                <p class="intro-text mb-4">
-                    Creating resilient cloud solutions that handle millions of real-time messages daily.
-                    Passionate about clean architecture and modern development practices.
-                </p>
-                
-                <!-- Quick Actions -->
-                <div class="quick-actions mb-4">
-                    <a href="/About" class="btn-action primary">About Me</a>
-                    <a href="/Articles" class="btn-action secondary">Articles</a>
-                    <a href="/About" class="btn-action tertiary">Contact</a>
-                </div>
-                
-                <!-- Essential Links -->
-                <div class="essential-links">
-                    <a href="https://github.com/ravaee" target="_blank" class="link-icon">
-                        <i class="bi bi-github"></i>
-                    </a>
-                    <a href="https://www.linkedin.com/in/mohamad-ravaei/" target="_blank" class="link-icon">
-                        <i class="bi bi-linkedin"></i>
-                    </a>
-                    <span class="location-text">
-                        <i class="bi bi-geo-alt"></i> Leipzig, Germany
-                    </span>
+            </div>
+            <!-- Text content - will be on left on desktop, below image on mobile -->
+            <div class="col-lg-8 order-lg-1">
+                <div class="pe-lg-4 text-center text-lg-start">
+                    <h1 class="display-5 fw-bold text-dark mb-3">
+                        Hi I`m, <span class="text-primary">Mo Ravaei</span>
+                    </h1>
+                    <p class="lead text-muted mb-4">
+                        A Software Engineer with 10+ years of experience architecting and building 
+                        distributed systems that scale. From processing millions of real-time events to implementing 
+                        zero-trust security architectures, I turn complex technical challenges into elegant solutions.
+                    </p>
+                    <p class="mb-4">
+                        I design and develop cloud-native applications using Azure, Kubernetes, and modern DevOps practices. 
+                        My passion lies in creating robust, scalable systems while mentoring teams to achieve engineering excellence.
+                    </p>
+                    <div class="d-flex gap-3 flex-wrap justify-content-center justify-content-lg-start">
+                        <a href="https://www.linkedin.com/in/mohamad-ravaei/" target="_blank" class="btn btn-primary btn-lg shadow-sm hover-lift">
+                            <i class="bi bi-linkedin me-2"></i>LinkedIn
+                        </a>
+                        <a href="/About" class="btn btn-outline-primary btn-lg shadow-sm hover-lift">
+                            <i class="bi bi-person-circle me-2"></i>More About Me
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
-
 <!-- Latest Articles Section -->
 @if (Model.RecentArticles.Any())
 {
-    <section class="py-5 bg-light">
+    <section class="py-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
         <div class="container">
-            <div class="row align-items-center mb-5">
-                <div class="col">
-                    <h2 class="h3 mb-2">Latest Articles</h2>
-                    <p class="text-muted mb-0">Insights and tutorials on software development</p>
+            <!-- Section Header -->
+            <div class="mb-5">
+                <div class="d-inline-block px-3 py-2 bg-primary bg-opacity-10 rounded-pill mb-3">
+                    <i class="bi bi-journal-text text-primary me-2"></i>
+                    <span class="text-primary fw-medium">Featured Content</span>
                 </div>
-                <div class="col-auto">
-                    <a href="/Articles" class="btn btn-outline-primary btn-sm">
-                        View All <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
-                </div>
+                <h2 class="display-6 fw-bold text-dark mb-3">Latest Articles</h2>
+                <p class="lead text-muted mb-0" style="max-width: 600px;">
+                    Insights, tutorials, and thoughts on software development and modern technology.
+                </p>
             </div>
             
-            <div class="row g-4">
+            <!-- Articles Grid -->
+            <div class="row g-4 mb-5">
                 @foreach (var article in Model.RecentArticles.Take(6))
                 {
                     <div class="col-lg-4 col-md-6">
-                        <article class="card h-100 border-0 shadow-sm hover-lift">
-                            <div class="card-body d-flex flex-column">
-                                <!-- Category Badge -->
-                                @if (article.Category != null)
-                                {
-                                    <span class="badge bg-primary-subtle text-primary align-self-start mb-3">@article.Category.Name</span>
+                        <article class="card border-0 shadow-sm h-100 article-card">
+                            <!-- Article Image -->
+                            <div class="article-image-container">
+                                @{
+                                    var imgMatch = System.Text.RegularExpressions.Regex.Match(article.Content ?? "", @"<img[^>]+src=[""']([^""']+)[""'][^>]*>");
+                                    var imgUrl = imgMatch.Success ? imgMatch.Groups[1].Value : "/images/default-article.svg";
                                 }
-                                else
-                                {
-                                    <span class="badge bg-secondary-subtle text-secondary align-self-start mb-3">General</span>
-                                }
+                                <img src="@imgUrl" 
+                                     alt="@article.Title" 
+                                     class="article-image"
+                                     onerror="this.src='/images/default-article.svg'" />
                                 
+                                <!-- Category Badge Overlay -->
+                                <div class="position-absolute top-0 start-0 m-3">
+                                    @if (article.Category != null)
+                                    {
+                                        <span class="badge rounded-pill" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; backdrop-filter: blur(10px);">
+                                            @article.Category.Name
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-dark bg-opacity-75 text-white rounded-pill" style="backdrop-filter: blur(10px);">General</span>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="card-body d-flex flex-column p-4">
                                 <!-- Title -->
-                                <h3 class="h5 mb-3">
-                                    <a href="/Articles/@article.Slug" class="text-decoration-none text-dark stretched-link">
+                                <h3 class="h5 mb-3 fw-bold">
+                                    <a href="/Articles/@article.Slug" class="text-decoration-none text-dark stretched-link article-title">
                                         @article.Title
                                     </a>
                                 </h3>
                                 
                                 <!-- Excerpt -->
-                                <p class="text-muted small mb-4 flex-grow-1">
+                                <p class="text-muted mb-4 flex-grow-1" style="line-height: 1.6;">
                                     @{
                                         var excerpt = article.MetaDescription;
                                         if (string.IsNullOrEmpty(excerpt) && !string.IsNullOrEmpty(article.Content))
@@ -106,37 +120,58 @@
                                 </p>
                                 
                                 <!-- Meta Info -->
-                                <div class="d-flex align-items-center text-muted small">
-                                    <i class="bi bi-calendar3 me-1"></i>
-                                    <span>@((article.PublishedAt ?? article.CreatedAt).ToString("MMM dd, yyyy"))</span>
-                                    <span class="mx-2">•</span>
-                                    <i class="bi bi-clock me-1"></i>
-                                    <span>
-                                        @{
-                                            var wordCount = article.Content?.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
-                                            var readingTime = Math.Max(1, wordCount / 200);
-                                        }
-                                        @readingTime min read
-                                    </span>
+                                <div class="d-flex align-items-center justify-content-between text-muted small">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-calendar3 me-2 text-primary"></i>
+                                        <span>@((article.PublishedAt ?? article.CreatedAt).ToString("MMM dd, yyyy"))</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-clock me-2 text-primary"></i>
+                                        <span>
+                                            @{
+                                                var wordCount = article.Content?.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
+                                                var readingTime = Math.Max(1, wordCount / 200);
+                                            }
+                                            @readingTime min read
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </article>
                     </div>
                 }
             </div>
+            
+            <!-- Call to Action -->
+            <div class="text-center">
+                <a href="/Articles" class="btn btn-primary btn-lg rounded-pill shadow-sm hover-lift px-4">
+                    <i class="bi bi-arrow-right me-2"></i>Explore All Articles
+                </a>
+            </div>
         </div>
     </section>
 }
 else
 {
-    <section class="articles-horizontal-section py-5 bg-light">
-        <div class="container text-center">
-            <div class="empty-articles-state">
-                <div class="empty-icon">
-                    <i class="bi bi-journal-plus"></i>
+    <section class="py-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+        <div class="container">
+            <div class="py-5">
+                <div class="d-inline-block px-3 py-2 bg-primary bg-opacity-10 rounded-pill mb-3">
+                    <i class="bi bi-journal-plus text-primary me-2"></i>
+                    <span class="text-primary fw-medium">Coming Soon</span>
                 </div>
-                <h3>More Articles Coming Soon!</h3>
-                <p class="text-muted">I'm working on some exciting content. Check back soon for fresh articles!</p>
+                <h3 class="fw-bold text-dark mb-3">Exciting Articles on the Way!</h3>
+                <p class="lead text-muted mb-4" style="max-width: 500px;">
+                    I'm crafting insightful content about software development, architecture, and technology trends.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="https://www.linkedin.com/in/mohamad-ravaei/" target="_blank" class="btn btn-outline-primary rounded-pill hover-lift">
+                        <i class="bi bi-linkedin me-2"></i>Follow for Updates
+                    </a>
+                    <a href="/About" class="btn btn-primary rounded-pill hover-lift">
+                        <i class="bi bi-person-circle me-2"></i>Learn More About Me
+                    </a>
+                </div>
             </div>
         </div>
     </section>

@@ -6,62 +6,68 @@
 
 @if (Model.Article != null)
 {
-    <section class="py-5 bg-light">
+    <div class="article-page">
         <div class="container">
-            <nav aria-label="breadcrumb" class="mb-3">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/">Home</a></li>
-                    <li class="breadcrumb-item"><a href="/Articles">Articles</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">@Model.Article.Title</li>
-                </ol>
+            <!-- Breadcrumb -->
+            <nav class="breadcrumb-nav mb-4">
+                <a href="/" class="breadcrumb-link">Home</a>
+                <span class="breadcrumb-separator">/</span>
+                <a href="/Articles" class="breadcrumb-link">Articles</a>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-current">@Model.Article.Title</span>
             </nav>
 
-            <div class="mb-3">
-                <h1 class="display-6 mb-2">@Model.Article.Title</h1>
-                <div class="d-flex flex-wrap gap-3 text-secondary small align-items-center">
-                    <time datetime="@((Model.Article.PublishedAt ?? Model.Article.CreatedAt).ToString("yyyy-MM-dd"))">Published on @((Model.Article.PublishedAt ?? Model.Article.CreatedAt).ToString("MMM dd, yyyy"))</time>
-                    @if (Model.Article.UpdatedAt > Model.Article.CreatedAt.AddMinutes(1))
-                    {
-                        <time datetime="@Model.Article.UpdatedAt.ToString("yyyy-MM-dd")">Updated @Model.Article.UpdatedAt.ToString("MMM dd, yyyy")</time>
-                    }
-                    <!-- Category Display -->
-                    <div class="category-info">
+            <!-- Article Container -->
+            <div class="article-container">
+                <!-- Article Header -->
+                <header class="article-header">
+                    <h1 class="article-title">@Model.Article.Title</h1>
+                    <div class="article-meta">
+                        <time class="article-date" datetime="@((Model.Article.PublishedAt ?? Model.Article.CreatedAt).ToString("yyyy-MM-dd"))">
+                            @((Model.Article.PublishedAt ?? Model.Article.CreatedAt).ToString("MMMM dd, yyyy"))
+                        </time>
                         @if (Model.Article.Category != null)
                         {
-                            <a href="/Articles?category=@Model.Article.Category.Slug" class="category-badge">
-                                <i class="bi bi-folder2 me-1"></i>@Model.Article.Category.Name
-                            </a>
+                            <span class="article-category">@Model.Article.Category.Name</span>
                         }
-                        else
+                    </div>
+                </header>
+
+                <!-- Article Content -->
+                <div class="article-content">
+                    @{
+                        var cleanContent = Model.Article.Content;
+                        // Remove p tags that contain only br tags and whitespace
+                        cleanContent = System.Text.RegularExpressions.Regex.Replace(cleanContent, @"<p>\s*<br\s*/?>\s*</p>", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        // Remove p tags that contain only whitespace and br tags (multiple br tags)
+                        cleanContent = System.Text.RegularExpressions.Regex.Replace(cleanContent, @"<p>(\s*<br\s*/?>\s*)+</p>", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    }
+                    @Html.Raw(cleanContent)
+                </div>
+
+                <!-- Tags -->
+                @if (Model.Article.ArticleTags.Any())
+                {
+                    <div class="article-tags">
+                        @foreach (var articleTag in Model.Article.ArticleTags)
                         {
-                            <a href="/Articles?category=general" class="category-badge">
-                                <i class="bi bi-folder2 me-1"></i>General
-                            </a>
+                            <span class="article-tag">@articleTag.Tag.Name</span>
                         }
                     </div>
-                </div>
-            </div>
+                }
 
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-body">
-                    <div class="fs-6">
-                        @Html.Raw(Model.Article.Content)
-                    </div>
-                </div>
-            </div>
-
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-body">
-                    <h3 class="h6">Share this article</h3>
-                    <div class="d-flex gap-2 mt-2">
-                        <a class="btn btn-primary" target="_blank" href="https://twitter.com/intent/tweet?text=@Uri.EscapeDataString(Model.Article.Title)&url=@Uri.EscapeDataString(Url.PageLink()!)">
-                            <i class="bi bi-twitter-x me-1"></i> Twitter
+                <!-- Share Section -->
+                <div class="article-share">
+                    <h4 class="share-title">Share this article</h4>
+                    <div class="share-buttons">
+                        <a class="share-btn twitter" target="_blank" href="https://twitter.com/intent/tweet?text=@Uri.EscapeDataString(Model.Article.Title)&url=@Uri.EscapeDataString(Url.PageLink()!)">
+                            <i class="bi bi-twitter-x"></i>
                         </a>
-                        <a class="btn btn-info text-white" target="_blank" href="https://www.linkedin.com/sharing/share-offsite/?url=@Uri.EscapeDataString(Url.PageLink()!)">
-                            <i class="bi bi-linkedin me-1"></i> LinkedIn
+                        <a class="share-btn linkedin" target="_blank" href="https://www.linkedin.com/sharing/share-offsite/?url=@Uri.EscapeDataString(Url.PageLink()!)">
+                            <i class="bi bi-linkedin"></i>
                         </a>
-                        <button class="btn btn-secondary" onclick="copyToClipboard('@Url.PageLink()')">
-                            <i class="bi bi-clipboard me-1"></i> Copy Link
+                        <button class="share-btn copy" onclick="copyToClipboard('@Url.PageLink()')">
+                            <i class="bi bi-link-45deg"></i>
                         </button>
                     </div>
                 </div>
@@ -69,53 +75,62 @@
 
             @if (Model.RelatedArticles.Any())
             {
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h3 class="h6 mb-3">Related Articles</h3>
-                        <div class="row g-3">
-                            @foreach (var relatedArticle in Model.RelatedArticles)
-                            {
-                                <div class="col-md-4">
-                                    <div class="border rounded p-3 h-100">
-                                        <h4 class="h6 mb-2"><a class="link-underline link-underline-opacity-0" href="/Articles/@relatedArticle.Slug">@relatedArticle.Title</a></h4>
-                                        @if (!string.IsNullOrEmpty(relatedArticle.MetaDescription))
-                                        {
-                                            <p class="text-secondary small mb-2">@relatedArticle.MetaDescription</p>
-                                        }
-                                        <div class="d-flex justify-content-between align-items-center text-secondary small">
-                                            <time datetime="@((relatedArticle.PublishedAt ?? relatedArticle.CreatedAt).ToString("yyyy-MM-dd"))">@((relatedArticle.PublishedAt ?? relatedArticle.CreatedAt).ToString("MMM dd, yyyy"))</time>
-                                            <a class="fw-semibold" href="/Articles/@relatedArticle.Slug">Read →</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
+                <div class="related-articles">
+                    <h3 class="related-title">Related Articles</h3>
+                    <div class="related-grid">
+                        @foreach (var relatedArticle in Model.RelatedArticles)
+                        {
+                            <div class="related-article">
+                                <h4 class="related-article-title">
+                                    <a href="/Articles/@relatedArticle.Slug">@relatedArticle.Title</a>
+                                </h4>
+                                @if (!string.IsNullOrEmpty(relatedArticle.MetaDescription))
+                                {
+                                    <p class="related-article-excerpt">@relatedArticle.MetaDescription</p>
+                                }
+                                <time class="related-article-date" datetime="@((relatedArticle.PublishedAt ?? relatedArticle.CreatedAt).ToString("yyyy-MM-dd"))">
+                                    @((relatedArticle.PublishedAt ?? relatedArticle.CreatedAt).ToString("MMM dd, yyyy"))
+                                </time>
+                            </div>
+                        }
                     </div>
                 </div>
             }
-
-            <div class="text-center mt-4">
-                <a class="btn btn-primary" href="/Articles"><i class="bi bi-arrow-left me-2"></i>Back to Articles</a>
-            </div>
         </div>
-    </section>
+    </div>
 }
 else
 {
-    <section class="py-5">
-        <div class="container text-center">
-            <div class="display-3 text-secondary">404</div>
-            <h2 class="h4">Article Not Found</h2>
-            <p class="text-secondary">The article you're looking for doesn't exist or has been removed.</p>
-            <a class="btn btn-primary" href="/Articles">Browse All Articles</a>
+    <div class="article-not-found">
+        <div class="container">
+            <div class="not-found-content">
+                <h1 class="not-found-title">Article Not Found</h1>
+                <p class="not-found-description">The article you're looking for doesn't exist or has been removed.</p>
+                <a class="back-link" href="/Articles">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Browse All Articles</span>
+                </a>
+            </div>
         </div>
-    </section>
+    </div>
 }
 
 <script>
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(function () {
-            // Optional: show feedback to user
+            const btn = event.target.closest('.copy');
+            const icon = btn.querySelector('i');
+            
+            // Show feedback
+            icon.className = 'bi bi-check';
+            btn.style.color = '#28a745';
+            
+            setTimeout(() => {
+                icon.className = 'bi bi-link-45deg';
+                btn.style.color = '';
+            }, 2000);
+        }).catch(function(err) {
+            console.error('Failed to copy: ', err);
         });
     }
 </script>

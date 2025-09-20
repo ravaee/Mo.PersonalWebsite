@@ -1,0 +1,241 @@
+@page
+@model Mo.PersonalWebsite.Pages.Admin.ImagesModel
+@{
+    ViewData["Title"] = "Manage Images";
+}
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-1">Manage Images</h1>
+                <p class="text-secondary mb-0">Upload and manage images for your articles</p>
+            </div>
+            <a href="/Admin/Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Message))
+        {
+            <div class="alert @(Model.IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+                @Model.Message
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <div class="row">
+            <!-- Upload Form -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-cloud-upload me-2"></i>Upload New Image</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data" asp-page-handler="Upload">
+                            <div class="mb-3">
+                                <label asp-for="UploadFile" class="form-label">Select Image</label>
+                                <input asp-for="UploadFile" type="file" class="form-control" accept="image/*" required />
+                                <div class="form-text">Supported formats: JPG, PNG, GIF, WebP, SVG (Max: 10MB)</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="AltText" class="form-label">Alt Text (Optional)</label>
+                                <input asp-for="AltText" class="form-control" placeholder="Describe the image..." />
+                                <div class="form-text">Used for accessibility and SEO</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Caption" class="form-label">Caption (Optional)</label>
+                                <input asp-for="Caption" class="form-control" placeholder="Image caption..." />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-upload me-2"></i>Upload Image
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Quick Help -->
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>How to Use Images</h6>
+                    </div>
+                    <div class="card-body">
+                        <ol class="mb-0 small">
+                            <li>Upload images using the form above</li>
+                            <li>Copy the image URL from the gallery</li>
+                            <li>In your article editor, use the image button or paste HTML directly</li>
+                            <li>Example: <code>&lt;img src="/uploads/filename.jpg" alt="Description" class="img-fluid" /&gt;</code></li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Gallery -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-images me-2"></i>Image Gallery</h5>
+                        <span class="badge bg-primary">@Model.Images.Count() images</span>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Images.Any())
+                        {
+                            <div class="row g-3">
+                                @foreach (var image in Model.Images)
+                                {
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="card border-0 shadow-sm h-100">
+                                            <!-- Image Preview -->
+                                            <div class="position-relative" style="height: 200px; overflow: hidden;">
+                                                <img src="@image.FilePath" 
+                                                     alt="@image.AltText" 
+                                                     class="card-img-top h-100" 
+                                                     style="object-fit: cover;" 
+                                                     loading="lazy" />
+                                                
+                                                <!-- Delete Button -->
+                                                <form method="post" asp-page-handler="Delete" class="position-absolute top-0 end-0 m-2">
+                                                    <input type="hidden" name="id" value="@image.Id" />
+                                                    <button type="submit" 
+                                                            class="btn btn-danger btn-sm" 
+                                                            onclick="return confirm('Are you sure you want to delete this image?')"
+                                                            title="Delete Image">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            
+                                            <div class="card-body p-3">
+                                                <!-- File Info -->
+                                                <h6 class="card-title text-truncate" title="@image.OriginalFileName">
+                                                    @image.OriginalFileName
+                                                </h6>
+                                                
+                                                <div class="small text-muted mb-2">
+                                                    @if (image.Width.HasValue && image.Height.HasValue)
+                                                    {
+                                                        <span>@image.Width × @image.Height px</span>
+                                                        <br />
+                                                    }
+                                                    <span>@((image.FileSizeBytes / 1024.0).ToString("F1")) KB</span>
+                                                    <br />
+                                                    <span>@image.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                                </div>
+
+                                                <!-- URL Copy -->
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" 
+                                                           class="form-control" 
+                                                           value="@image.FilePath" 
+                                                           readonly 
+                                                           id="url-@image.Id" />
+                                                    <button class="btn btn-outline-primary" 
+                                                            type="button" 
+                                                            onclick="copyToClipboard('url-@image.Id')"
+                                                            title="Copy URL">
+                                                        <i class="bi bi-copy"></i>
+                                                    </button>
+                                                </div>
+
+                                                <!-- HTML Copy -->
+                                                <div class="mt-2">
+                                                    <button class="btn btn-outline-secondary btn-sm w-100" 
+                                                            type="button" 
+                                                            onclick="copyImageHtml('@image.FilePath', '@(image.AltText ?? image.OriginalFileName)')"
+                                                            title="Copy HTML">
+                                                        <i class="bi bi-code me-1"></i>Copy HTML
+                                                    </button>
+                                                </div>
+
+                                                @if (!string.IsNullOrEmpty(image.Caption))
+                                                {
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">
+                                                            <strong>Caption:</strong> @image.Caption
+                                                        </small>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-5">
+                                <i class="bi bi-images text-muted" style="font-size: 3rem;"></i>
+                                <h5 class="text-muted mt-3">No images uploaded yet</h5>
+                                <p class="text-muted">Upload your first image using the form on the left.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    function copyToClipboard(elementId) {
+        const element = document.getElementById(elementId);
+        element.select();
+        element.setSelectionRange(0, 99999); // For mobile devices
+        document.execCommand('copy');
+        
+        // Show feedback
+        showToast('URL copied to clipboard!', 'success');
+    }
+
+    function copyImageHtml(imageUrl, altText) {
+        const html = `<img src="${imageUrl}" alt="${altText}" class="img-fluid" />`;
+        navigator.clipboard.writeText(html).then(() => {
+            showToast('HTML code copied to clipboard!', 'success');
+        }).catch(() => {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = html;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('HTML code copied to clipboard!', 'success');
+        });
+    }
+
+    function showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '1055';
+            document.body.appendChild(toastContainer);
+        }
+
+        // Create toast element
+        const toastElement = document.createElement('div');
+        toastElement.className = `toast align-items-center text-bg-${type} border-0`;
+        toastElement.setAttribute('role', 'alert');
+        toastElement.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+        toastContainer.appendChild(toastElement);
+
+        // Initialize Bootstrap toast
+        const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+        toast.show();
+
+        // Remove toast element after it's hidden
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
+    }
+</script>

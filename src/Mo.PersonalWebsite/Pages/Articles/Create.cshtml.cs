@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Mo.PersonalWebsite.Features.Articles.Services;
 using Mo.PersonalWebsite.Features.Categories.Services;
+using Mo.PersonalWebsite.Features.Images.Services;
 using Mo.PersonalWebsite.Infrastructure.Entities;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
@@ -15,12 +16,14 @@ public class CreateModel : PageModel
 {
     private readonly IArticleService _articleService;
     private readonly ICategoryService _categoryService;
+    private readonly IImageService _imageService;
     private readonly ILogger<CreateModel> _logger;
 
-    public CreateModel(IArticleService articleService, ICategoryService categoryService, ILogger<CreateModel> logger)
+    public CreateModel(IArticleService articleService, ICategoryService categoryService, IImageService imageService, ILogger<CreateModel> logger)
     {
         _articleService = articleService;
         _categoryService = categoryService;
+        _imageService = imageService;
         _logger = logger;
     }
 
@@ -28,6 +31,7 @@ public class CreateModel : PageModel
     public InputModel Input { get; set; } = new();
     
     public List<SelectListItem> Categories { get; set; } = new();
+    public IEnumerable<ImageBlob> Images { get; set; } = new List<ImageBlob>();
 
     public class InputModel
     {
@@ -63,6 +67,7 @@ public class CreateModel : PageModel
     public async Task OnGetAsync()
     {
         await LoadCategoriesAsync();
+        await LoadImagesAsync();
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -138,6 +143,11 @@ public class CreateModel : PageModel
             Value = c.Id.ToString(),
             Text = c.Name
         }));
+    }
+
+    private async Task LoadImagesAsync()
+    {
+        Images = await _imageService.GetAllAsync();
     }
 
     private static string GenerateSlug(string input)

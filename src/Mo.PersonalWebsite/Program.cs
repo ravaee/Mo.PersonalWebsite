@@ -72,7 +72,22 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Configure static files to serve uploaded content
+app.UseStaticFiles(); // Default wwwroot
+
+// Ensure uploads directory and configure file serving
+var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+var articlesUploadsPath = Path.Combine(uploadsPath, "articles");
+if (!Directory.Exists(articlesUploadsPath))
+{
+    Directory.CreateDirectory(articlesUploadsPath);
+}
 
 app.UseRouting();
 

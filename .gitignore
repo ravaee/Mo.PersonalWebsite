@@ -518,3 +518,7 @@ MigrationBackup/
 # appsettings with sensitive data (keep appsettings.json but ignore Development versions)
 appsettings.Development.json
 appsettings.Production.json
+
+# User uploads
+wwwroot/uploads/
+**/uploads/
