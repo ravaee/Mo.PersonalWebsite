@@ -73,8 +73,33 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Configure static files to serve uploaded content
-app.UseStaticFiles(); // Default wwwroot
+// Configure static files with cache control headers
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.File.Name.ToLowerInvariant();
+        
+        // Set cache control based on file type
+        if (path.EndsWith(".css") || path.EndsWith(".js"))
+        {
+            // CSS and JS files: Cache for 1 hour but allow revalidation
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=3600, must-revalidate";
+            ctx.Context.Response.Headers.ETag = $"\"{ctx.File.LastModified:yyyyMMddHHmmss}\"";
+        }
+        else if (path.EndsWith(".jpg") || path.EndsWith(".jpeg") || path.EndsWith(".png") || 
+                 path.EndsWith(".gif") || path.EndsWith(".svg") || path.EndsWith(".ico"))
+        {
+            // Images: Cache for 24 hours
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=86400";
+        }
+        else
+        {
+            // Other files: Short cache with revalidation
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=1800, must-revalidate";
+        }
+    }
+});
 
 // Ensure uploads directory and configure file serving
 var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
@@ -90,6 +115,20 @@ if (!Directory.Exists(articlesUploadsPath))
 }
 
 app.UseRouting();
+
+// Add middleware to prevent caching of HTML pages
+app.Use(async (context, next) =>
+{
+    await next();
+    
+    // Add no-cache headers for HTML responses to ensure fresh content
+    if (context.Response.ContentType?.Contains("text/html") == true)
+    {
+        context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+        context.Response.Headers.Pragma = "no-cache";
+        context.Response.Headers.Expires = "0";
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
