@@ -63,7 +63,32 @@ jobs:
           
           # Deploy with docker-compose
           docker-compose --env-file .env.${{ env.ENVIRONMENT }} down --remove-orphans || true
-          docker-compose --env-file .env.${{ env.ENVIRONMENT }} up --build -d
+          
+          # Remove old images to force rebuild
+          docker image prune -af --filter "label=maintainer=mo-personal-website" || true
+          docker system prune -f || true
+          
+          # Build and deploy with no cache
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} build --no-cache
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} up -d
+          
+          # Wait for services to be ready
+          echo "Waiting for services to start..."
+          sleep 30
+          
+          # Verify deployment
+          echo "Verifying deployment..."
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} ps
+          
+          # Check if webapp is responding
+          WEBAPP_PORT=$(grep WEBAPP_PORT .env.${{ env.ENVIRONMENT }} | cut -d '=' -f2)
+          echo "Testing webapp on port $WEBAPP_PORT..."
+          curl -f http://localhost:$WEBAPP_PORT/ || echo "Warning: Webapp health check failed"
+          
+          # Verify static files are accessible
+          echo "Verifying static files..."
+          docker exec mo-website-${{ env.ENVIRONMENT }} ls -la /app/wwwroot/css/ || echo "Warning: CSS files not found"
+          docker exec mo-website-${{ env.ENVIRONMENT }} ls -la /app/wwwroot/js/ || echo "Warning: JS files not found"
           
           # Clean up environment file for security
           rm -f .env.${{ env.ENVIRONMENT }}

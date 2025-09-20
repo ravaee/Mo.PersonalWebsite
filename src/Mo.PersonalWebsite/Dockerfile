@@ -25,11 +25,15 @@ RUN mkdir -p /app/wwwroot/uploads
 # Copy published app
 COPY --from=publish /app/publish .
 
+# Ensure wwwroot directory has correct permissions
+RUN chown -R app:app /app/wwwroot || true
+RUN chmod -R 755 /app/wwwroot || true
+
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Expose port
-EXPOSE 80
+EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "Mo.PersonalWebsite.dll"]
