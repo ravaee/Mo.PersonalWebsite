@@ -1,24 +1,21 @@
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# Use a more specific base image for better caching
+FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 WORKDIR /src
 
-# Copy csproj and restore dependencies (this layer will be cached if deps don't change)
-COPY ["Mo.PersonalWebsite.csproj", "Mo.PersonalWebsite/"]
-RUN dotnet restore "Mo.PersonalWebsite/Mo.PersonalWebsite.csproj"
+# Copy only the project file first for better Docker layer caching
+COPY Mo.PersonalWebsite.csproj .
+RUN dotnet restore
 
-# Copy everything else and publish directly
-COPY . Mo.PersonalWebsite/
-WORKDIR "/src/Mo.PersonalWebsite"
-RUN dotnet publish "Mo.PersonalWebsite.csproj" -c Release -o /app/publish --no-restore /p:UseAppHost=false
+# Copy the rest of the source code
+COPY . .
+RUN dotnet publish -c Release -o /app/publish
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
 WORKDIR /app
 
-# Create uploads directory with proper permissions
-RUN mkdir -p /app/wwwroot/uploads && \
-    chown -R app:app /app/wwwroot 2>/dev/null || true && \
-    chmod -R 755 /app/wwwroot 2>/dev/null || true
+# Create uploads directory
+RUN mkdir -p /app/wwwroot/uploads
 
 # Copy published app
 COPY --from=build /app/publish .
