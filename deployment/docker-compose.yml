@@ -3,10 +3,8 @@ version: "3.8"
 services:
   webapp:
     build:
-      context: ../app
-      dockerfile: ../deployment/Dockerfile
-      args:
-        - BUILDKIT_INLINE_CACHE=1
+      context: ../src/Mo.PersonalWebsite
+      dockerfile: Dockerfile
     container_name: mo-website-${ENVIRONMENT:-local}
     restart: unless-stopped
     ports:
@@ -21,33 +19,32 @@ services:
       - Logging__LogLevel__Microsoft.AspNetCore=${LOG_LEVEL_ASPNETCORE}
     depends_on:
       - sqlserver
+    volumes:
+      - uploads_data:/app/wwwroot/uploads
     networks:
       - mo-website-network
-    volumes:
-      - webapp-data:/app/wwwroot/uploads
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: mo-website-sqlserver-${ENVIRONMENT:-local}
+    container_name: mo-sqlserver-${ENVIRONMENT:-local}
     restart: unless-stopped
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=${SQL_SERVER_PASSWORD}
       - MSSQL_PID=Express
     ports:
-      - "${SQL_PORT:-1433}:1433"
+      - "${SQL_PORT:-1434}:1433"
     volumes:
-      - sqlserver-data:/var/opt/mssql
-      - ./backups:/var/opt/mssql/backups
+      - sql_data:/var/opt/mssql
     networks:
       - mo-website-network
+
+volumes:
+  sql_data:
+    driver: local
+  uploads_data:
+    driver: local
 
 networks:
   mo-website-network:
     driver: bridge
-
-volumes:
-  webapp-data:
-    driver: local
-  sqlserver-data:
-    driver: local

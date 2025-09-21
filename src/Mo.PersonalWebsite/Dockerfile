@@ -1,12 +1,12 @@
-# Super simple Dockerfile - just copy pre-built published files
+# Runtime-only Dockerfile for pre-built applications
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 
 # Create uploads directory
 RUN mkdir -p /app/wwwroot/uploads
 
-# Copy pre-built published app from GitHub Actions
-COPY . .
+# Copy pre-built application (will be copied from local publish)
+COPY publish/ .
 
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080
