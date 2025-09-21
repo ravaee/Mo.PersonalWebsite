@@ -53,6 +53,12 @@ jobs:
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           cd ${{ env.DEPLOY_PATH }}/deployment
 
+          # Check server resources before build
+          echo "=== Server Resources ==="
+          df -h /
+          free -h
+          echo "========================"
+
           # Enable Docker BuildKit for cache mounting
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
@@ -77,7 +83,17 @@ jobs:
 
           # Deploy with docker-compose (server-side build with cache)
           docker-compose --env-file .env.${{ env.ENVIRONMENT }} down --remove-orphans || true
-          docker-compose --env-file .env.${{ env.ENVIRONMENT }} build webapp
+          
+          # Clean any dangling images to free space
+          docker image prune -f || true
+          
+          echo "Starting build at $(date)..."
+          timeout 900 docker-compose --env-file .env.${{ env.ENVIRONMENT }} build webapp || {
+            echo "Build timed out after 15 minutes"
+            exit 1
+          }
+          echo "Build completed at $(date)"
+          
           docker-compose --env-file .env.${{ env.ENVIRONMENT }} up -d
           
           # Wait for services to be ready
