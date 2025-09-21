@@ -4,7 +4,7 @@ services:
   webapp:
     image: ghcr.io/ravaee/mo-personalwebsite:${IMAGE_TAG:-latest}
     pull_policy: always
-    container_name: mo-website-${ENVIRONMENT:-local}
+    container_name: mo-website-${ENVIRONMENT}
     restart: unless-stopped
     ports:
       - "${WEBAPP_PORT:-3001}:8080"

@@ -94,6 +94,12 @@ jobs:
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           cd ${{ env.DEPLOY_PATH }}/deployment
 
+          # Ensure Docker Compose v2 is available
+          if ! docker compose version >/dev/null 2>&1; then
+            echo "Installing Docker Compose v2 plugin..."
+            apt-get update -y && apt-get install -y docker-compose-plugin || true
+          fi
+
           # Create environment file with secrets
           cat > .env.${{ env.ENVIRONMENT }} << EOL
         ENVIRONMENT=${{ env.ENVIRONMENT }}
@@ -113,9 +119,13 @@ jobs:
         SQL_MEMORY_RESERVATION=${{ env.ENVIRONMENT == 'prod' && '1G' || '512M' }}
         EOL
 
-          # Deploy with docker-compose (pull latest then up)
-          docker-compose --env-file .env.${{ env.ENVIRONMENT }} pull webapp || true
-          docker-compose --env-file .env.${{ env.ENVIRONMENT }} up -d --remove-orphans
+          # Clean up any previous containers to avoid compose v1 volume merge bugs
+          docker compose --env-file .env.${{ env.ENVIRONMENT }} down --remove-orphans || true
+          docker rm -f mo-website-${ENVIRONMENT} 2>/dev/null || true
+
+          # Deploy with docker compose v2 (pull latest then up)
+          docker compose --env-file .env.${{ env.ENVIRONMENT }} pull webapp || true
+          docker compose --env-file .env.${{ env.ENVIRONMENT }} up -d
           
           # Wait for services to be ready
           echo "Waiting for services to start..."
@@ -123,7 +133,10 @@ jobs:
           
           # Verify deployment
           echo "Verifying deployment..."
-          docker-compose --env-file .env.${{ env.ENVIRONMENT }} ps
+          docker compose --env-file .env.${{ env.ENVIRONMENT }} ps
+
+          echo "Recent webapp logs:"
+          docker compose --env-file .env.${{ env.ENVIRONMENT }} logs webapp --tail=200 || true
           
           # Check if webapp is responding
           WEBAPP_PORT=$(grep WEBAPP_PORT .env.${{ env.ENVIRONMENT }} | cut -d '=' -f2)
@@ -132,8 +145,12 @@ jobs:
           
           # Verify static files are accessible
           echo "Verifying static files..."
-          docker exec mo-website-${{ env.ENVIRONMENT }} ls -la /app/wwwroot/css/ || echo "Warning: CSS files not found"
-          docker exec mo-website-${{ env.ENVIRONMENT }} ls -la /app/wwwroot/js/ || echo "Warning: JS files not found"
+          if docker ps --format '{{.Names}}' | grep -q "^mo-website-${{ env.ENVIRONMENT }}$"; then
+            docker exec mo-website-${{ env.ENVIRONMENT }} ls -la /app/wwwroot/css/ || echo "Warning: CSS files not found"
+            docker exec mo-website-${{ env.ENVIRONMENT }} ls -la /app/wwwroot/js/ || echo "Warning: JS files not found"
+          else
+            echo "Webapp container not running; skipping static files check."
+          fi
           
           # Clean up environment file for security
           rm -f .env.${{ env.ENVIRONMENT }}
