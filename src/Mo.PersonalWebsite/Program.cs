@@ -119,15 +119,19 @@ app.UseRouting();
 // Add middleware to prevent caching of HTML pages
 app.Use(async (context, next) =>
 {
-    await next();
-    
     // Add no-cache headers for HTML responses to ensure fresh content
-    if (context.Response.ContentType?.Contains("text/html") == true)
+    context.Response.OnStarting(() =>
     {
-        context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
-        context.Response.Headers.Pragma = "no-cache";
-        context.Response.Headers.Expires = "0";
-    }
+        if (context.Response.ContentType?.Contains("text/html") == true)
+        {
+            context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+            context.Response.Headers.Pragma = "no-cache";
+            context.Response.Headers.Expires = "0";
+        }
+        return Task.CompletedTask;
+    });
+    
+    await next();
 });
 
 app.UseAuthentication();
