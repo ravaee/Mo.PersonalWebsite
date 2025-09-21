@@ -4,11 +4,15 @@ WORKDIR /src
 
 # Copy only the project file first for better Docker layer caching
 COPY Mo.PersonalWebsite.csproj .
-RUN dotnet restore
+
+# Use BuildKit cache mount for NuGet packages to speed up restore
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore --disable-parallel
 
 # Copy the rest of the source code
 COPY . .
-RUN dotnet publish -c Release -o /app/publish
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet publish -c Release -o /app/publish --no-restore
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final

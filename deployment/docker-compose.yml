@@ -5,6 +5,8 @@ services:
     build:
       context: ../src/Mo.PersonalWebsite
       dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     container_name: mo-website-${ENVIRONMENT:-local}
     restart: unless-stopped
     ports:

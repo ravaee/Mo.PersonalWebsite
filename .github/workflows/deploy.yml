@@ -53,6 +53,13 @@ jobs:
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           cd ${{ env.DEPLOY_PATH }}/deployment
           
+          # Create NuGet cache directory if it doesn't exist
+          mkdir -p ~/.nuget/packages
+          
+          # Enable Docker BuildKit for cache mounting
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          
           # Create environment file with secrets
           cat > .env.${{ env.ENVIRONMENT }} << EOL
         ENVIRONMENT=${{ env.ENVIRONMENT }}
