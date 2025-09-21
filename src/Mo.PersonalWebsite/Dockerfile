@@ -1,18 +1,27 @@
-# Ultra-simple approach - copy everything and build in one step
+# Use BuildKit cache mounts for fast NuGet restore
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-# Copy everything and build directly
+# Copy only the project file first for better Docker layer caching
+COPY Mo.PersonalWebsite.csproj .
+
+# Use BuildKit cache mount to persist NuGet packages between builds
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore
+
+# Copy the rest of the source code
 COPY . .
-RUN dotnet publish -c Release -o out
+RUN dotnet publish -c Release -o /app/publish
 
-# Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
-COPY --from=build /app/out .
 
 # Create uploads directory
 RUN mkdir -p /app/wwwroot/uploads
+
+# Copy published app
+COPY --from=build /app/publish .
 
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080
