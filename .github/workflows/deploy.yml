@@ -23,26 +23,28 @@ jobs:
     - name: Build and publish
       run: dotnet publish src/Mo.PersonalWebsite/Mo.PersonalWebsite.csproj -c Release -o src/Mo.PersonalWebsite/publish
       
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H 188.245.247.13 >> ~/.ssh/known_hosts
+        
+        # Configure SSH to prevent timeouts
+        cat >> ~/.ssh/config << EOF
+        Host 188.245.247.13
+          ServerAliveInterval 60
+          ServerAliveCountMax 3
+        EOF
+        
     - name: Deploy to server
       run: |
-        echo "${{ secrets.DEPLOY_KEY }}" > deploy_key
-        chmod 600 deploy_key
-        
-        # Debug: Check if key is valid
-        echo "Key file size:"
-        ls -la deploy_key
-        echo "Key starts with:"
-        head -1 deploy_key
-        
         # Copy entire repository including the publish folder
-        rsync -avz --delete -e "ssh -i deploy_key -o StrictHostKeyChecking=no" \
-          ./ root@188.245.247.13:/root/mowebsite/
+        rsync -avz --delete ./ root@188.245.247.13:/root/mowebsite/
         
         # Deploy using the main docker-compose file
-        ssh -i deploy_key -o StrictHostKeyChecking=no root@188.245.247.13 "
+        ssh root@188.245.247.13 "
           cd /root/mowebsite/deployment &&
           docker-compose down &&
           docker-compose up --build -d
         "
-        
-        rm deploy_key
