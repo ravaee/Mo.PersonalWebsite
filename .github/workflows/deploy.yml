@@ -42,9 +42,16 @@ jobs:
         # Copy entire repository including the publish folder
         rsync -avz --delete ./ root@188.245.247.13:/root/mowebsite/
         
-        # Deploy using the main docker-compose file
+        # Deploy using the main docker-compose file with GitHub secrets as environment variables
         ssh root@188.245.247.13 "
           cd /root/mowebsite/deployment &&
           docker-compose down &&
+          WEBAPP_PORT=${{ secrets.WEBAPP_PORT }} \
+          ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }} \
+          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+          SQL_SERVER_PASSWORD=${{ secrets.SQL_SERVER_PASSWORD }} \
+          ENVIRONMENT=prod \
+          ASPNETCORE_ENVIRONMENT=Production \
+          DATABASE_NAME=MoPersonalWebsite_Prod \
           docker-compose up --build -d
         "
