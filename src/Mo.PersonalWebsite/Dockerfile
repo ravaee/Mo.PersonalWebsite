@@ -1,13 +1,19 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 WORKDIR /src
 
-# Copy the entire source for a reliable restore/publish (simpler and robust)
+# 1) Copy only project file first to maximize restore layer cache
+COPY Mo.PersonalWebsite.csproj ./
+
+# 2) Restore NuGet packages with cache mount
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore Mo.PersonalWebsite.csproj --disable-parallel
+
+# 3) Copy the rest of the source
 COPY . .
 
-# Restore with cache mount (fast) and then publish (no re-restore)
+# 4) Publish without restore (uses restored packages)
 RUN --mount=type=cache,target=/root/.nuget/packages \
-    dotnet restore --disable-parallel && \
-    dotnet publish -c Release -o /app/publish --no-restore
+    dotnet publish Mo.PersonalWebsite.csproj -c Release -o /app/publish --no-restore
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
