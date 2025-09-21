@@ -20,7 +20,7 @@ services:
     depends_on:
       - sqlserver
     volumes:
-      - uploads_data:/app/wwwroot/uploads
+      - /appdata/mowebsite/uploads:/app/wwwroot/uploads
     networks:
       - mo-website-network
 
@@ -35,15 +35,9 @@ services:
     ports:
       - "${SQL_PORT:-1434}:1433"
     volumes:
-      - sql_data:/var/opt/mssql
+      - /appdata/mowebsite/database:/var/opt/mssql
     networks:
       - mo-website-network
-
-volumes:
-  sql_data:
-    driver: local
-  uploads_data:
-    driver: local
 
 networks:
   mo-website-network:
