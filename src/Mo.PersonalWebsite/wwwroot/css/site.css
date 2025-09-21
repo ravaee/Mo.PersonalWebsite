@@ -7,8 +7,13 @@
     --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 
+/* Global font family for all elements */
+* {
+    font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
 }
 
@@ -1733,13 +1738,13 @@ canvas.particle-canvas { position:absolute; inset:0; width:100%; height:100%; z-
     
     .cert-badge .bi-microsoft::after {
         content: " AZ-204";
-        font-family: 'Segoe UI', sans-serif;
+        font-family: 'Nunito', 'Segoe UI', sans-serif;
         font-style: normal;
     }
     
     .cert-badge .bi-laptop::after {
         content: " LPIC-1";
-        font-family: 'Segoe UI', sans-serif;
+        font-family: 'Nunito', 'Segoe UI', sans-serif;
         font-style: normal;
     }
     
@@ -3772,7 +3777,7 @@ canvas.particle-canvas { position:absolute; inset:0; width:100%; height:100%; z-
     line-height: 1.2;
     color: #111827;
     margin-bottom: 1rem;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .article-meta {
@@ -3805,7 +3810,7 @@ canvas.particle-canvas { position:absolute; inset:0; width:100%; height:100%; z-
 
 /* Article Content - Improved Typography */
 .article-content {
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: 'Nunito', Georgia, 'Times New Roman', serif;
     font-size: 1.125rem;
     line-height: 1.7;
     color: #374151;
@@ -3823,7 +3828,7 @@ canvas.particle-canvas { position:absolute; inset:0; width:100%; height:100%; z-
 .article-content h4,
 .article-content h5,
 .article-content h6 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-weight: 600;
     color: #111827;
     margin-top: 2.5rem;
