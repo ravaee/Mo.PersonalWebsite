@@ -5,11 +5,10 @@ WORKDIR /src
 # Copy NuGet configuration first
 COPY ["NuGet.Config", "./"]
 
-# Copy csproj and restore dependencies with retry and timeout settings
+# Copy csproj and restore dependencies optimized for Hetzner network
 COPY ["Mo.PersonalWebsite.csproj", "Mo.PersonalWebsite/"]
 RUN dotnet restore "Mo.PersonalWebsite/Mo.PersonalWebsite.csproj" \
-    --disable-parallel \
-    --verbosity normal
+    --verbosity minimal
 
 # Copy everything else and build
 COPY . Mo.PersonalWebsite/
