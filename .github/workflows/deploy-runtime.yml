@@ -1,0 +1,42 @@
+name: Deploy Pre-built Runtime
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore src/Mo.PersonalWebsite/Mo.PersonalWebsite.csproj
+      
+    - name: Build and publish
+      run: dotnet publish src/Mo.PersonalWebsite/Mo.PersonalWebsite.csproj -c Release -o src/Mo.PersonalWebsite/publish
+      
+    - name: Deploy to server
+      run: |
+        echo "${{ secrets.DEPLOY_KEY }}" > deploy_key
+        chmod 600 deploy_key
+        
+        # Copy entire repository including the publish folder
+        rsync -avz --delete -e "ssh -i deploy_key -o StrictHostKeyChecking=no" \
+          ./ root@188.245.247.13:/root/mowebsite/
+        
+        # Deploy using runtime-only compose file
+        ssh -i deploy_key -o StrictHostKeyChecking=no root@188.245.247.13 "
+          cd /root/mowebsite/deployment &&
+          docker-compose -f docker-compose.runtime-only.yml down &&
+          docker-compose -f docker-compose.runtime-only.yml up --build -d
+        "
+        
+        rm deploy_key
