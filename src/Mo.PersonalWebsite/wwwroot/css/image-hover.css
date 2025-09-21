@@ -1,0 +1,76 @@
+/* Interactive Image Hover Effects */
+.image-hover-container {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.hover-message {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 1000;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.hover-message::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #667eea;
+}
+
+.image-hover-container:hover .hover-message {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.image-hover-container:hover img {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+}
+
+/* Sparkle animation for extra fun */
+.sparkle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #ffd700;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sparkle.animate {
+    animation: sparkleFloat 1.5s ease-out;
+}
+
+@keyframes sparkleFloat {
+    0% {
+        opacity: 1;
+        transform: scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0) translateY(-20px);
+    }
+}
