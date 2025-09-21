@@ -2,9 +2,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy csproj and restore dependencies
+# Copy NuGet configuration first
+COPY ["NuGet.Config", "./"]
+
+# Copy csproj and restore dependencies with retry and timeout settings
 COPY ["Mo.PersonalWebsite.csproj", "Mo.PersonalWebsite/"]
-RUN dotnet restore "Mo.PersonalWebsite/Mo.PersonalWebsite.csproj"
+RUN dotnet restore "Mo.PersonalWebsite/Mo.PersonalWebsite.csproj" \
+    --disable-parallel \
+    --verbosity normal
 
 # Copy everything else and build
 COPY . Mo.PersonalWebsite/
