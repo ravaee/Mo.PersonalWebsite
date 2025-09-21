@@ -1,6 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 WORKDIR /src
 
+# Fix for dotnet restore hanging on "Determining projects to restore..."
+# See: https://github.com/dotnet/runtime/issues/97828
+ENV DOTNET_EnableWriteXorExecute=0
+
 # Copy source and restore+publish in one step (simplest, most reliable)
 COPY . .
 RUN dotnet restore --verbosity minimal && \
