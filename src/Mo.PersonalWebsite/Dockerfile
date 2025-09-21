@@ -3,11 +3,14 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 WORKDIR /src
 
 # Copy only the project file first for better Docker layer caching
-COPY Mo.PersonalWebsite.csproj .
+COPY Mo.PersonalWebsite.csproj ./
 
-# Use BuildKit cache mount for NuGet packages to speed up restore
+# Copy project files needed for restore (props/targets if any)
+COPY ./Properties ./Properties
+
+# Use BuildKit cache mount for NuGet packages to speed up restore (target the csproj directly)
 RUN --mount=type=cache,target=/root/.nuget/packages \
-    dotnet restore --disable-parallel
+    dotnet restore Mo.PersonalWebsite.csproj --disable-parallel
 
 # Copy the rest of the source code
 COPY . .

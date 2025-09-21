@@ -2,11 +2,8 @@ version: "3.8"
 
 services:
   webapp:
-    build:
-      context: ../src/Mo.PersonalWebsite
-      dockerfile: Dockerfile
-      args:
-        - BUILDKIT_INLINE_CACHE=1
+    image: ghcr.io/ravaee/mo-personalwebsite:${IMAGE_TAG:-latest}
+    pull_policy: always
     container_name: mo-website-${ENVIRONMENT:-local}
     restart: unless-stopped
     ports:
