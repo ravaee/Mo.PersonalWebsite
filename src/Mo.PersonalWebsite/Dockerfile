@@ -1,17 +1,16 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Fix for dotnet restore hanging on "Determining projects to restore..."
-# See: https://github.com/dotnet/runtime/issues/97828
-ENV DOTNET_EnableWriteXorExecute=0
+# Copy only the project file first for better Docker layer caching
+COPY Mo.PersonalWebsite.csproj .
+RUN dotnet restore
 
-# Copy source and restore+publish in one step (simplest, most reliable)
+# Copy the rest of the source code
 COPY . .
-RUN dotnet restore --verbosity minimal && \
-    dotnet publish -c Release -o /app/publish --no-restore --verbosity minimal
+RUN dotnet publish -c Release -o /app/publish
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
 # Create uploads directory
