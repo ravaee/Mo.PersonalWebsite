@@ -45,6 +45,14 @@ jobs:
         # Deploy using the main docker-compose file with GitHub secrets as environment variables
         ssh root@188.245.247.13 "
           cd /root/mowebsite/deployment &&
+          
+          # Create directories with proper permissions for containers
+          mkdir -p /appdata/mowebsite/uploads /appdata/mowebsite/database &&
+          chmod -R 755 /appdata/mowebsite/uploads &&
+          chown -R 10001:0 /appdata/mowebsite/database &&
+          chmod -R 755 /appdata/mowebsite/database &&
+          
+          # Stop and start containers with environment variables
           docker-compose down &&
           WEBAPP_PORT=${{ secrets.WEBAPP_PORT }} \
           ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }} \
