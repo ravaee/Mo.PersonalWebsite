@@ -14,61 +14,20 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set environment based on branch
       run: |
         if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
           echo "ENVIRONMENT=prod" >> $GITHUB_ENV
           echo "DEPLOY_PATH=/root/mowebsite" >> $GITHUB_ENV
-          echo "IMAGE_TAG=prod" >> $GITHUB_ENV
         else
           echo "ENVIRONMENT=dev" >> $GITHUB_ENV
           echo "DEPLOY_PATH=/root/mowebsite-dev" >> $GITHUB_ENV
-          echo "IMAGE_TAG=dev" >> $GITHUB_ENV
         fi
-
-    - name: Build and push container image
-      uses: docker/build-push-action@v6
-      with:
-        context: ./src/Mo.PersonalWebsite
-        file: ./src/Mo.PersonalWebsite/Dockerfile
-        push: true
-        provenance: false
-        tags: |
-          ghcr.io/${{ github.repository_owner }}/mo-personalwebsite:${{ env.IMAGE_TAG }}
-          ghcr.io/${{ github.repository_owner }}/mo-personalwebsite:latest
-        cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/mo-personalwebsite:buildcache
-        cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/mo-personalwebsite:buildcache,mode=max
-
-    - name: Ensure GHCR package is public (best effort)
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        set -e
-        echo "Attempting to set GHCR package visibility to public (safe to ignore if already public)..."
-        curl -s -L -X PATCH \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GH_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/users/${{ github.repository_owner }}/packages/container/mo-personalwebsite/visibility \
-          -d '{"visibility":"public"}' || true
 
     - name: Setup SSH key
       run: |
@@ -87,18 +46,16 @@ jobs:
 
     - name: Deploy to server
       run: |
-        # Copy only deployment folder to server
-        rsync -avz --delete ./deployment/ ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:${{ env.DEPLOY_PATH }}/deployment/
+  # Copy entire repository to server
+  rsync -avz --delete ./ ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:${{ env.DEPLOY_PATH }}/
         
         # SSH into server and deploy with optimized approach
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           cd ${{ env.DEPLOY_PATH }}/deployment
 
-          # Ensure Docker Compose v2 is available
-          if ! docker compose version >/dev/null 2>&1; then
-            echo "Installing Docker Compose v2 plugin..."
-            apt-get update -y && apt-get install -y docker-compose-plugin || true
-          fi
+          # Enable Docker BuildKit for cache mounting
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
 
           # Create environment file with secrets
           cat > .env.${{ env.ENVIRONMENT }} << EOL
@@ -112,20 +69,16 @@ jobs:
         ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
         LOG_LEVEL_DEFAULT=${{ env.ENVIRONMENT == 'prod' && 'Warning' || 'Information' }}
         LOG_LEVEL_ASPNETCORE=${{ env.ENVIRONMENT == 'prod' && 'Error' || 'Warning' }}
-        IMAGE_TAG=${{ env.IMAGE_TAG }}
         WEBAPP_MEMORY_LIMIT=${{ env.ENVIRONMENT == 'prod' && '1G' || '512M' }}
         WEBAPP_MEMORY_RESERVATION=${{ env.ENVIRONMENT == 'prod' && '512M' || '256M' }}
         SQL_MEMORY_LIMIT=${{ env.ENVIRONMENT == 'prod' && '2G' || '1G' }}
         SQL_MEMORY_RESERVATION=${{ env.ENVIRONMENT == 'prod' && '1G' || '512M' }}
         EOL
 
-          # Clean up any previous containers to avoid compose v1 volume merge bugs
-          docker compose --env-file .env.${{ env.ENVIRONMENT }} down --remove-orphans || true
-          docker rm -f mo-website-${ENVIRONMENT} 2>/dev/null || true
-
-          # Deploy with docker compose v2 (pull latest then up)
-          docker compose --env-file .env.${{ env.ENVIRONMENT }} pull webapp || true
-          docker compose --env-file .env.${{ env.ENVIRONMENT }} up -d
+          # Deploy with docker-compose (server-side build with cache)
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} down --remove-orphans || true
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} build webapp
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} up -d
           
           # Wait for services to be ready
           echo "Waiting for services to start..."
@@ -133,10 +86,10 @@ jobs:
           
           # Verify deployment
           echo "Verifying deployment..."
-          docker compose --env-file .env.${{ env.ENVIRONMENT }} ps
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} ps
 
           echo "Recent webapp logs:"
-          docker compose --env-file .env.${{ env.ENVIRONMENT }} logs webapp --tail=200 || true
+          docker-compose --env-file .env.${{ env.ENVIRONMENT }} logs webapp --tail=200 || true
           
           # Check if webapp is responding
           WEBAPP_PORT=$(grep WEBAPP_PORT .env.${{ env.ENVIRONMENT }} | cut -d '=' -f2)

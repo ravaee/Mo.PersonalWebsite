@@ -1,20 +1,12 @@
-# Use a more specific base image for better caching
 FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 WORKDIR /src
 
-# Copy only the project file first for better Docker layer caching
-COPY Mo.PersonalWebsite.csproj ./
-
-# Copy project files needed for restore (props/targets if any)
-COPY ./Properties ./Properties
-
-# Use BuildKit cache mount for NuGet packages to speed up restore (target the csproj directly)
-RUN --mount=type=cache,target=/root/.nuget/packages \
-    dotnet restore Mo.PersonalWebsite.csproj --disable-parallel
-
-# Copy the rest of the source code
+# Copy the entire source for a reliable restore/publish (simpler and robust)
 COPY . .
+
+# Restore with cache mount (fast) and then publish (no re-restore)
 RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore --disable-parallel && \
     dotnet publish -c Release -o /app/publish --no-restore
 
 # Runtime stage
@@ -30,7 +22,6 @@ COPY --from=build /app/publish .
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
-ENV DOTNET_URLS=http://+:8080
 
 # Expose port
 EXPOSE 8080

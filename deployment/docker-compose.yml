@@ -2,9 +2,12 @@ version: "3.8"
 
 services:
   webapp:
-    image: ghcr.io/ravaee/mo-personalwebsite:${IMAGE_TAG:-latest}
-    pull_policy: always
-    container_name: mo-website-${ENVIRONMENT}
+    build:
+      context: ../src/Mo.PersonalWebsite
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: mo-website-${ENVIRONMENT:-local}
     restart: unless-stopped
     ports:
       - "${WEBAPP_PORT:-3001}:8080"
