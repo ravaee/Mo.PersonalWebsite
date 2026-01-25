@@ -1,44 +1,33 @@
+# The docker-compose file to be ran on Linux 
+# This file assumes an external network named 'shared' already exists
+# A SQL Server instance is also expected to be running on the 'shared' network with the name 'sqlserver'
+# Environment variables used in this file should be defined in a .env file or in the environment where docker-compose is run
+# Github actions builds and pushes the Docker image to GitHub Container Registry
+# The image will be pulled from ghcr.io with automatic versioning based on build number
+# Currently we use Portainer to manage our Docker containers on linux on-prem
+
 version: "3.8"
 
 services:
   webapp:
-    build:
-      context: ../src/Mo.PersonalWebsite
-      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_USER}/mo-personalwebsite:latest
     container_name: mo-website-${ENVIRONMENT:-local}
     restart: unless-stopped
     ports:
       - "${WEBAPP_PORT:-3001}:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
-      - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=${DATABASE_NAME};User Id=sa;Password=${SQL_SERVER_PASSWORD};TrustServerCertificate=true;
-      - AdminUser__Username=${ADMIN_USERNAME}
-      - AdminUser__Password=${ADMIN_PASSWORD}
-      - Logging__LogLevel__Default=${LOG_LEVEL_DEFAULT}
-      - Logging__LogLevel__Microsoft.AspNetCore=${LOG_LEVEL_ASPNETCORE}
-    depends_on:
-      - sqlserver
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${DATABASE_NAME};User Id=sa;Password=${SQL_SERVER_PASSWORD};TrustServerCertificate=true;"
+      AdminUser__Username: ${ADMIN_USERNAME}
+      AdminUser__Password: ${ADMIN_PASSWORD}
+      Logging__LogLevel__Default: ${LOG_LEVEL_DEFAULT}
+      Logging__LogLevel__Microsoft_AspNetCore: ${LOG_LEVEL_ASPNETCORE}
     volumes:
       - /appdata/mowebsite/uploads:/app/wwwroot/uploads
     networks:
-      - mo-website-network
-
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: mo-sqlserver-${ENVIRONMENT:-local}
-    restart: unless-stopped
-    environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${SQL_SERVER_PASSWORD}
-      - MSSQL_PID=Express
-    ports:
-      - "${SQL_PORT:-1434}:1433"
-    volumes:
-      - /appdata/mowebsite/database:/var/opt/mssql
-    networks:
-      - mo-website-network
+      - shared
 
 networks:
-  mo-website-network:
-    driver: bridge
+  shared:
+    external: true

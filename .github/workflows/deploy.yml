@@ -1,4 +1,4 @@
-name: Deploy Pre-built Runtime
+name: Build and Deploy
 
 on:
   push:
@@ -8,20 +8,46 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
       with:
-        dotnet-version: '9.0.x'
-        
-    - name: Restore dependencies
-      run: dotnet restore src/Mo.PersonalWebsite/Mo.PersonalWebsite.csproj
-      
-    - name: Build and publish
-      run: dotnet publish src/Mo.PersonalWebsite/Mo.PersonalWebsite.csproj -c Release -o src/Mo.PersonalWebsite/publish
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository_owner }}/mo-personalwebsite
+        tags: |
+          type=raw,value=latest
+          type=sha,prefix={{branch}}-
+          type=ref,event=branch
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/Mo.PersonalWebsite
+        file: ./src/Mo.PersonalWebsite/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          BUILD_NUMBER=${{ github.run_number }}
+          BUILD_SHA=${{ github.sha }}
       
     - name: Setup SSH key
       run: |
@@ -39,10 +65,10 @@ jobs:
         
     - name: Deploy to server
       run: |
-        # Copy entire repository including the publish folder
-        rsync -avz --delete ./ root@188.245.247.13:/root/mowebsite/
+        # Copy docker-compose.yml to the server
+        rsync -avz ./deployment/docker-compose.yml root@188.245.247.13:/root/mowebsite/deployment/
         
-        # Deploy using the main docker-compose file with GitHub secrets as environment variables
+        # Deploy using docker-compose with the new image from GitHub Container Registry
         ssh root@188.245.247.13 "
           cd /root/mowebsite/deployment &&
           
@@ -52,8 +78,12 @@ jobs:
           chown -R 10001:0 /appdata/mowebsite/database &&
           chmod -R 755 /appdata/mowebsite/database &&
           
+          # Pull the latest image from GitHub Container Registry
+          docker pull ghcr.io/${{ github.repository_owner }}/mo-personalwebsite:latest &&
+          
           # Stop and start containers with environment variables
           docker-compose down &&
+          GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }} \
           WEBAPP_PORT=${{ secrets.WEBAPP_PORT }} \
           ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }} \
           ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
@@ -61,5 +91,5 @@ jobs:
           ENVIRONMENT=prod \
           ASPNETCORE_ENVIRONMENT=Production \
           DATABASE_NAME=MoPersonalWebsite_Prod \
-          docker-compose up --build -d
+          docker-compose up -d
         "
