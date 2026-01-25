@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build and Push Docker Image
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,48 +48,3 @@ jobs:
         build-args: |
           BUILD_NUMBER=${{ github.run_number }}
           BUILD_SHA=${{ github.sha }}
-      
-    - name: Setup SSH key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H 188.245.247.13 >> ~/.ssh/known_hosts
-        
-        # Configure SSH to prevent timeouts
-        cat >> ~/.ssh/config << EOF
-        Host 188.245.247.13
-          ServerAliveInterval 60
-          ServerAliveCountMax 3
-        EOF
-        
-    - name: Deploy to server
-      run: |
-        # Copy docker-compose.yml to the server
-        rsync -avz ./deployment/docker-compose.yml root@188.245.247.13:/root/mowebsite/deployment/
-        
-        # Deploy using docker-compose with the new image from GitHub Container Registry
-        ssh root@188.245.247.13 "
-          cd /root/mowebsite/deployment &&
-          
-          # Create directories with proper permissions for containers
-          mkdir -p /appdata/mowebsite/uploads /appdata/mowebsite/database &&
-          chmod -R 755 /appdata/mowebsite/uploads &&
-          chown -R 10001:0 /appdata/mowebsite/database &&
-          chmod -R 755 /appdata/mowebsite/database &&
-          
-          # Pull the latest image from GitHub Container Registry
-          docker pull ghcr.io/${{ github.repository_owner }}/mo-personalwebsite:latest &&
-          
-          # Stop and start containers with environment variables
-          docker-compose down &&
-          GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }} \
-          WEBAPP_PORT=${{ secrets.WEBAPP_PORT }} \
-          ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }} \
-          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
-          SQL_SERVER_PASSWORD=${{ secrets.SQL_SERVER_PASSWORD }} \
-          ENVIRONMENT=prod \
-          ASPNETCORE_ENVIRONMENT=Production \
-          DATABASE_NAME=MoPersonalWebsite_Prod \
-          docker-compose up -d
-        "
