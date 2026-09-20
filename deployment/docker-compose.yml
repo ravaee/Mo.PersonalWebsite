@@ -1,12 +1,18 @@
-# The docker-compose file to be ran on Linux 
-# This file assumes an external network named 'shared' already exists
-# A SQL Server instance is also expected to be running on the 'shared' network with the name 'sqlserver'
-# Environment variables used in this file should be defined in a .env file or in the environment where docker-compose is run
-# Github actions builds and pushes the Docker image to GitHub Container Registry
-# The image will be pulled from ghcr.io with automatic versioning based on build number
-# Currently we use Portainer to manage our Docker containers on linux on-prem
-
-version: "3.8"
+# The full deployment stack for the personal website: the web app and its database.
+# Everything the site needs is defined here - no external SQL Server and no
+# pre-created network - so this file comes up on a bare Docker host as-is.
+#
+# The web image is built and pushed to GitHub Container Registry by
+# .github/workflows/deploy.yml; this file pulls it from there.
+# Settings come from an .env file next to this one - copy env.local, env.dev or
+# env.prod and fill it in:
+#
+#   docker compose --env-file .env up -d
+#
+# The database is stored in a named Docker volume, so restarting the containers,
+# pulling a newer image or redeploying the stack all keep the existing data.
+# The only things that erase it are `docker compose down -v` and removing the
+# volume by hand.
 
 services:
   webapp:
@@ -22,12 +28,51 @@ services:
       AdminUser__Username: ${ADMIN_USERNAME}
       AdminUser__Password: ${ADMIN_PASSWORD}
       Logging__LogLevel__Default: ${LOG_LEVEL_DEFAULT}
-      Logging__LogLevel__Microsoft_AspNetCore: ${LOG_LEVEL_ASPNETCORE}
+      Logging__LogLevel__Microsoft.AspNetCore: ${LOG_LEVEL_ASPNETCORE}
+    depends_on:
+      sqlserver:
+        # The app applies EF migrations on startup and quits if the database
+        # is not answering yet, so wait for the healthcheck rather than just the process
+        condition: service_healthy
     volumes:
       - /appdata/mowebsite/uploads:/app/wwwroot/uploads
+    mem_limit: ${WEBAPP_MEMORY_LIMIT:-512M}
+    mem_reservation: ${WEBAPP_MEMORY_RESERVATION:-256M}
     networks:
-      - shared
+      - mo-website-network
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mo-sqlserver-${ENVIRONMENT:-local}
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQL_SERVER_PASSWORD}
+      # Express is free to run in production; Developer is licensed for dev/test only
+      MSSQL_PID: Express
+    ports:
+      # Bound to localhost only - reach it through an SSH tunnel instead of
+      # publishing port 1433 to the internet
+      - "127.0.0.1:${SQL_PORT:-1433}:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    mem_limit: ${SQL_MEMORY_LIMIT:-2G}
+    mem_reservation: ${SQL_MEMORY_RESERVATION:-1G}
+    networks:
+      - mo-website-network
+
+volumes:
+  # Named explicitly so the same volume is picked up no matter which directory
+  # the stack is deployed from - a Compose-generated name follows the folder name
+  sqlserver_data:
+    name: mo-sqlserver-data-${ENVIRONMENT:-local}
 
 networks:
-  shared:
-    external: true
+  mo-website-network:
+    driver: bridge
