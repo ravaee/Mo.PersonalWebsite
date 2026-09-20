@@ -65,6 +65,8 @@ jobs:
     - name: Run deploy.sh on the server
       env:
         HOST: ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}
+        DEPLOY_USER: ${{ secrets.SSH_USER }}
+        DEPLOY_HOST: ${{ secrets.SERVER_HOST }}
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key && chmod 600 ~/.ssh/key
@@ -72,5 +74,9 @@ jobs:
         # or mangled SSH_PRIVATE_KEY apart from a server that rejected a valid one
         ssh-keygen -lf ~/.ssh/key || echo "could not read the key - SSH_PRIVATE_KEY is malformed"
         ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+        # Neither of these prints a secret: lengths catch stray whitespace in the
+        # values, and the host key fingerprint says which machine we reached
+        echo "SSH_USER length: ${#DEPLOY_USER} (expected 4)  SERVER_HOST length: ${#DEPLOY_HOST} (expected 15)"
+        ssh-keyscan -t ed25519 "$DEPLOY_HOST" 2>/dev/null | ssh-keygen -lf - || true
         scp -i ~/.ssh/key deployment/docker-compose.yml deployment/deploy.sh "$HOST:/root/mowebsite/"
         ssh -i ~/.ssh/key "$HOST" 'chmod +x /root/mowebsite/deploy.sh && /root/mowebsite/deploy.sh'
