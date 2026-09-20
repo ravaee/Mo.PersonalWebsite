@@ -64,19 +64,24 @@ jobs:
     # hand on the server does exactly what this job does
     - name: Run deploy.sh on the server
       env:
-        HOST: ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}
         DEPLOY_USER: ${{ secrets.SSH_USER }}
         DEPLOY_HOST: ${{ secrets.SERVER_HOST }}
       run: |
+        # Secrets set through the UI or with `echo` often carry a trailing
+        # newline, which turns into an unresolvable host or user name
+        user=$(printf '%s' "$DEPLOY_USER" | tr -d '[:space:]')
+        host=$(printf '%s' "$DEPLOY_HOST" | tr -d '[:space:]')
+
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key && chmod 600 ~/.ssh/key
-        # Fingerprints are not secret, and this is the fastest way to tell a wrong
-        # or mangled SSH_PRIVATE_KEY apart from a server that rejected a valid one
-        ssh-keygen -lf ~/.ssh/key || echo "could not read the key - SSH_PRIVATE_KEY is malformed"
-        ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
-        # Neither of these prints a secret: lengths catch stray whitespace in the
-        # values, and the host key fingerprint says which machine we reached
-        echo "SSH_USER length: ${#DEPLOY_USER} (expected 4)  SERVER_HOST length: ${#DEPLOY_HOST} (expected 15)"
-        ssh-keyscan -t ed25519 "$DEPLOY_HOST" 2>/dev/null | ssh-keygen -lf - || true
-        scp -i ~/.ssh/key deployment/docker-compose.yml deployment/deploy.sh "$HOST:/root/mowebsite/"
-        ssh -i ~/.ssh/key "$HOST" 'chmod +x /root/mowebsite/deploy.sh && /root/mowebsite/deploy.sh'
+
+        # Fingerprints are not secret. The first says which key we are offering,
+        # the second which machine answered - together they explain any
+        # "Permission denied" without printing a single secret value
+        ssh-keygen -lf ~/.ssh/key || echo "SSH_PRIVATE_KEY is malformed"
+        ssh-keyscan -t ed25519 "$host" 2>/dev/null | ssh-keygen -lf - || echo "no host key from SERVER_HOST - check the value"
+
+        scp -o StrictHostKeyChecking=accept-new -i ~/.ssh/key \
+          deployment/docker-compose.yml deployment/deploy.sh "$user@$host:/root/mowebsite/"
+        ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/key "$user@$host" \
+          'chmod +x /root/mowebsite/deploy.sh && /root/mowebsite/deploy.sh'
