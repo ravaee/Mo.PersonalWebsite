@@ -7,6 +7,10 @@ using Mo.PersonalWebsite.Infrastructure.Entities;
 namespace Mo.PersonalWebsite.Pages.Admin;
 
 [Authorize(Policy = "AdminOnly")]
+// Stop an oversized upload at the pipeline instead of buffering it only to reject it later.
+// Slightly above the 10 MB service limit so a marginally-too-big file still gets a clear message.
+[RequestSizeLimit(12 * 1024 * 1024)]
+[RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
 public class ImagesModel : PageModel
 {
     private readonly IImageService _imageService;
@@ -57,6 +61,12 @@ public class ImagesModel : PageModel
             UploadFile = null;
             AltText = null;
             Caption = null;
+        }
+        catch (ImageValidationException ex)
+        {
+            // A rejection the admin can act on, so show the reason rather than a generic failure
+            Message = ex.Message;
+            IsSuccess = false;
         }
         catch (Exception ex)
         {

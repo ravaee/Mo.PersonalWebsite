@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mo.PersonalWebsite.Features.Images.Services;
 
@@ -5,6 +6,8 @@ namespace Mo.PersonalWebsite.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+// Only the article editor's image picker calls this, and it lists every uploaded file
+[Authorize(Policy = "AdminOnly")]
 public class ImagesController : ControllerBase
 {
     private readonly IImageService _imageService;

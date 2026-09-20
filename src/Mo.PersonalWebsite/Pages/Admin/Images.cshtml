@@ -35,8 +35,8 @@
                         <form method="post" enctype="multipart/form-data" asp-page-handler="Upload">
                             <div class="mb-3">
                                 <label asp-for="UploadFile" class="form-label">Select Image</label>
-                                <input asp-for="UploadFile" type="file" class="form-control" accept="image/*" required />
-                                <div class="form-text">Supported formats: JPG, PNG, GIF, WebP, SVG (Max: 10MB)</div>
+                                <input asp-for="UploadFile" type="file" class="form-control" accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif" required />
+                                <div class="form-text">Supported formats: JPG, PNG, GIF (Max: 10MB). iPhone HEIC photos need exporting as JPG first.</div>
                             </div>
 
                             <div class="mb-3">
@@ -180,6 +180,39 @@
 </section>
 
 <script>
+    // The server rejects anything over 10MB, but a request past the pipeline limit
+    // is refused before the page can render a message - so check here first.
+    (function () {
+        const maxBytes = 10 * 1024 * 1024;
+        const allowed = ['jpg', 'jpeg', 'png', 'gif'];
+        const input = document.querySelector('input[type="file"][name="UploadFile"]');
+        if (!input) return;
+
+        input.addEventListener('change', function () {
+            const file = input.files && input.files[0];
+            if (!file) return;
+
+            const extension = (file.name.split('.').pop() || '').toLowerCase();
+            if (extension === 'heic' || extension === 'heif') {
+                showToast('HEIC photos cannot be shown by web browsers. Export the photo as JPG and upload that instead.', 'danger');
+                input.value = '';
+                return;
+            }
+
+            if (!allowed.includes(extension)) {
+                showToast(`'.${extension}' files are not supported. Choose a JPG, PNG or GIF image.`, 'danger');
+                input.value = '';
+                return;
+            }
+
+            if (file.size > maxBytes) {
+                const size = (file.size / 1024 / 1024).toFixed(1);
+                showToast(`That file is ${size} MB. The maximum upload size is 10 MB.`, 'danger');
+                input.value = '';
+            }
+        });
+    })();
+
     function copyToClipboard(elementId) {
         const element = document.getElementById(elementId);
         element.select();
