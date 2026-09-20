@@ -68,6 +68,9 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key && chmod 600 ~/.ssh/key
+        # Fingerprints are not secret, and this is the fastest way to tell a wrong
+        # or mangled SSH_PRIVATE_KEY apart from a server that rejected a valid one
+        ssh-keygen -lf ~/.ssh/key || echo "could not read the key - SSH_PRIVATE_KEY is malformed"
         ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
         scp -i ~/.ssh/key deployment/docker-compose.yml deployment/deploy.sh "$HOST:/root/mowebsite/"
         ssh -i ~/.ssh/key "$HOST" 'chmod +x /root/mowebsite/deploy.sh && /root/mowebsite/deploy.sh'
