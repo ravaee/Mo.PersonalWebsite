@@ -81,7 +81,14 @@ jobs:
         ssh-keygen -lf ~/.ssh/key || echo "SSH_PRIVATE_KEY is malformed"
         ssh-keyscan -t ed25519 "$host" 2>/dev/null | ssh-keygen -lf - || echo "no host key from SERVER_HOST - check the value"
 
-        scp -o StrictHostKeyChecking=accept-new -i ~/.ssh/key \
+        # Compare a port the site serves with the SSH port from this same runner:
+        # if 80 answers and 22 times out, SSH is filtered by source address
+        echo "--- connectivity from this runner ---"
+        timeout 10 bash -c "</dev/tcp/$host/80" && echo "port 80: reachable" || echo "port 80: unreachable"
+        timeout 10 bash -c "</dev/tcp/$host/22" && echo "port 22: reachable" || echo "port 22: unreachable"
+        echo "-------------------------------------"
+
+        scp -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -i ~/.ssh/key \
           deployment/docker-compose.yml deployment/deploy.sh "$user@$host:/root/mowebsite/"
         ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/key "$user@$host" \
           'chmod +x /root/mowebsite/deploy.sh && /root/mowebsite/deploy.sh'
