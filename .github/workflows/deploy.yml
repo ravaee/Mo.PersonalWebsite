@@ -48,66 +48,26 @@ jobs:
         build-args: |
           BUILD_NUMBER=${{ github.run_number }}
           BUILD_SHA=${{ github.sha }}
+
   deploy:
     name: Deploy to server
     needs: build-and-push
     runs-on: ubuntu-latest
-    # Only the master branch is deployed; other builds just publish an image
     if: github.ref == 'refs/heads/master'
-    # Never let two deploys touch the server at the same time
     concurrency:
       group: deploy-production
-      cancel-in-progress: false
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Configure SSH
+    # Everything the deploy does lives in deployment/deploy.sh, so running it by
+    # hand on the server does exactly what this job does
+    - name: Run deploy.sh on the server
+      env:
+        HOST: ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-        chmod 600 ~/.ssh/deploy_key
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key && chmod 600 ~/.ssh/key
         ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
-
-    - name: Sync compose file
-      # Only the compose file is copied - the server's .env holds the passwords
-      # and port for this environment and must not be overwritten by CI
-      run: |
-        scp -i ~/.ssh/deploy_key deployment/docker-compose.yml \
-          "${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:/root/mowebsite/docker-compose.yml"
-
-    - name: Pull image and restart stack
-      run: |
-        ssh -i ~/.ssh/deploy_key "${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}" bash -s <<'REMOTE'
-        set -e
-        cd /root/mowebsite
-        docker compose pull
-        docker compose up -d
-        # Drop the image the deploy just replaced; the database volume is untouched
-        docker image prune -f
-        REMOTE
-
-    - name: Verify the site is answering
-      run: |
-        ssh -i ~/.ssh/deploy_key "${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}" bash -s <<'REMOTE'
-        set -e
-        cd /root/mowebsite
-        port=$(grep -E '^WEBAPP_PORT=' .env | cut -d= -f2)
-        for attempt in $(seq 1 30); do
-          code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/" || true)
-          if [ "$code" = "200" ]; then
-            echo "site responded 200 after ${attempt} attempt(s)"
-            docker compose ps
-            exit 0
-          fi
-          sleep 5
-        done
-        echo "site did not return 200 within 150s" >&2
-        docker compose ps
-        docker compose logs --tail 40 webapp >&2
-        exit 1
-        REMOTE
-
-    - name: Remove SSH key
-      if: always()
-      run: rm -f ~/.ssh/deploy_key
+        scp -i ~/.ssh/key deployment/docker-compose.yml deployment/deploy.sh "$HOST:/root/mowebsite/"
+        ssh -i ~/.ssh/key "$HOST" 'chmod +x /root/mowebsite/deploy.sh && /root/mowebsite/deploy.sh'
